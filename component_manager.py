@@ -211,6 +211,18 @@ class ComponentManager:
         print(f"✅ ComponentManager: {name} unloaded successfully.")
         return True
 
+    def attach_component(self, name: str) -> bool:
+        """Manually attach (load) a discovered component/plugin by name."""
+        if name in self.loaded_components:
+            return True
+        return self.load_component(name)
+
+    def detach_component(self, name: str) -> bool:
+        """Manually detach (unload) a currently attached component/plugin by name."""
+        if name not in self.loaded_components:
+            return False
+        return self.unload_component(name)
+
     def reload_component(self, name: str):
         """Reloads a component."""
         print(f"🔄 ComponentManager: Reloading {name}...")
@@ -270,19 +282,56 @@ class ComponentManager:
             return False
 
     def list_components(self) -> List[Dict[str, Any]]:
+        """
+        Return discovered components/plugins with attach status.
+
+        attached_to_project/in_use=True means the module is currently loaded.
+        attached_to_project/in_use=False means the file exists but failed to load or is not loaded.
+        """
         out: List[Dict[str, Any]] = []
-        for name, rec in self.plugin_records.items():
+
+        discovered: Dict[str, Dict[str, Any]] = {}
+
+        def _discover_from_dir(base_dir: str, source: str):
+            if not os.path.exists(base_dir):
+                return
+            for filename in os.listdir(base_dir):
+                if not filename.endswith('.py') or filename.startswith('_'):
+                    continue
+                name = filename[:-3]
+                file_path = os.path.join(base_dir, filename)
+                discovered[name] = {
+                    "name": name,
+                    "file_path": file_path,
+                    "source": source,
+                }
+
+        # Components discovered first, then plugins overwrite by name (runtime override behavior)
+        _discover_from_dir(self.components_dir, "component")
+        _discover_from_dir(self.plugins_dir, "plugin")
+
+        for name, info in discovered.items():
+            rec = self.plugin_records.get(name)
+            in_use = rec is not None and name in self.loaded_components
+            file_path = rec.file_path if rec else info["file_path"]
             try:
-                mtime = os.path.getmtime(rec.file_path)
+                mtime = os.path.getmtime(file_path)
             except Exception:
                 mtime = None
+
             out.append({
                 "name": name,
-                "file_path": rec.file_path,
-                "mtime": mtime,
-                "routes": len(rec.routes),
-                "services": sorted(list(rec.service_names)),
+                "file_path": file_path,
+                "source": info["source"],
+                "attached_to_project": in_use,
+                "in_use": in_use,
+                "needs_plug_in": not in_use,
+                "can_attach": not in_use,
+                "can_detach": in_use,
+                "routes": len(rec.routes) if rec else 0,
+                "services": sorted(list(rec.service_names)) if rec else [],
             })
+
         return sorted(out, key=lambda x: x["name"])
 
     def start_watcher(self, poll_interval_seconds: float = 1.0):
