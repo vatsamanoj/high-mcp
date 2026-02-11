@@ -385,36 +385,6 @@ class RedisQuotaManager:
         val = self.redis.get("config:global:speed_override")
         return val and val.decode('utf-8') == "1"
 
-    def get_all_models(self) -> List[Dict[str, Any]]:
-        """Returns detailed information about all models."""
-        model_keys = self.redis.keys("model:*:rpm:limit")
-        all_model_names = [k.decode('utf-8').split(':')[1] for k in model_keys]
-        
-        results = []
-        for name in all_model_names:
-            tier = (self.redis.get(f"model:{name}:tier") or b"standard").decode('utf-8')
-            category = (self.redis.get(f"model:{name}:category") or b"unknown").decode('utf-8')
-            available = self.is_model_available(name)
-            
-            config_files = self.redis.smembers(f"model:{name}:config_files")
-            providers = [cf.decode('utf-8') for cf in config_files]
-            
-            rpm_limit = float(self.redis.get(f"model:{name}:rpm:limit") or -1)
-            tpm_limit = float(self.redis.get(f"model:{name}:tpm:limit") or -1)
-            rpd_limit = float(self.redis.get(f"model:{name}:rpd:limit") or -1)
-            
-            results.append({
-                "model": name,
-                "tier": tier,
-                "category": category,
-                "available": available,
-                "providers": providers,
-                "rpm": {"limit": rpm_limit},
-                "tpm": {"limit": tpm_limit},
-                "rpd": {"limit": rpd_limit}
-            })
-        return results
-
     def get_model_for_request(self, preferred_model: Optional[str] = None) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
         """Finds an available model."""
         # 1. Get all known models
