@@ -211,6 +211,18 @@ class ComponentManager:
         print(f"✅ ComponentManager: {name} unloaded successfully.")
         return True
 
+    def attach_component(self, name: str) -> bool:
+        """Manually attach (load) a discovered component/plugin by name."""
+        if name in self.loaded_components:
+            return True
+        return self.load_component(name)
+
+    def detach_component(self, name: str) -> bool:
+        """Manually detach (unload) a currently attached component/plugin by name."""
+        if name not in self.loaded_components:
+            return False
+        return self.unload_component(name)
+
     def reload_component(self, name: str):
         """Reloads a component."""
         print(f"🔄 ComponentManager: Reloading {name}...")
@@ -314,6 +326,8 @@ class ComponentManager:
                 "attached_to_project": in_use,
                 "in_use": in_use,
                 "needs_plug_in": not in_use,
+                "can_attach": not in_use,
+                "can_detach": in_use,
                 "routes": len(rec.routes) if rec else 0,
                 "services": sorted(list(rec.service_names)) if rec else [],
             })

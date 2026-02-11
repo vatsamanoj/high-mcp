@@ -152,6 +152,38 @@ async def get_components():
         return {"components": component_manager.list_components()}
     return {"components": []}
 
+
+@app.post("/api/components/{name}/attach")
+async def attach_component(name: str):
+    if not component_manager:
+        raise HTTPException(status_code=503, detail="Component manager not initialized")
+
+    ok = component_manager.attach_component(name)
+    if not ok:
+        raise HTTPException(status_code=404, detail=f"Component/plugin '{name}' not found or failed to attach")
+
+    return {
+        "status": "attached",
+        "name": name,
+        "components": component_manager.list_components(),
+    }
+
+
+@app.post("/api/components/{name}/detach")
+async def detach_component(name: str):
+    if not component_manager:
+        raise HTTPException(status_code=503, detail="Component manager not initialized")
+
+    ok = component_manager.detach_component(name)
+    if not ok:
+        raise HTTPException(status_code=404, detail=f"Component/plugin '{name}' is not currently attached")
+
+    return {
+        "status": "detached",
+        "name": name,
+        "components": component_manager.list_components(),
+    }
+
 @app.post("/api/coder/generate_stream")
 async def coder_generate_stream(req: CoderGenerateRequest, engine = Depends(get_ai_engine)):
     
