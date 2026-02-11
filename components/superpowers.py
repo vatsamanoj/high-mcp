@@ -41,8 +41,19 @@ class SuperpowersService:
     def __init__(self):
         pass
 
-    async def brainstorm(self, problem: str, context: str = "", model: str = None) -> str:
+    @staticmethod
+    def _normalize_text(value: Optional[str]) -> str:
+        return (value or "").strip()
+
+    async def _generate(self, model: Optional[str], prompt: str, response_format: Optional[str] = None) -> str:
         engine = get_ai_engine()
+        return await engine.generate_content(model, prompt, response_format=response_format)
+
+    async def brainstorm(self, problem: str, context: str = "", model: str = None) -> str:
+        problem = self._normalize_text(problem)
+        context = self._normalize_text(context)
+        if not problem:
+            raise HTTPException(status_code=400, detail="problem must not be empty")
         prompt = (
             "You are a Principal Software Architect using the 'Brainstorming' superpower.\n"
             "Your goal is to deeply analyze the user's problem before any code is written.\n"
@@ -53,10 +64,12 @@ class SuperpowersService:
             f"Problem: {problem}\n"
             f"Context: {context}\n"
         )
-        return await engine.generate_content(model, prompt)
+        return await self._generate(model, prompt)
 
     async def create_plan(self, design_doc: str, model: str = None) -> List[Dict[str, Any]]:
-        engine = get_ai_engine()
+        design_doc = self._normalize_text(design_doc)
+        if not design_doc:
+            raise HTTPException(status_code=400, detail="design_doc must not be empty")
         prompt = (
             "You are a Technical Project Manager using the 'Writing Plans' superpower.\n"
             "Convert the following design document into a detailed, step-by-step implementation plan.\n"
@@ -68,7 +81,7 @@ class SuperpowersService:
             "- 'files': List of files to be touched (List[str])\n\n"
             f"Design Document:\n{design_doc}\n"
         )
-        response = await engine.generate_content(model, prompt, response_format="json")
+        response = await self._generate(model, prompt, response_format="json")
         try:
             # Extract JSON from response
             start = response.find('[')
@@ -76,11 +89,14 @@ class SuperpowersService:
             if start != -1 and end != -1:
                 return json.loads(response[start:end])
             return [{"error": "Could not parse JSON plan", "raw": response}]
-        except Exception as e:
+        except json.JSONDecodeError as e:
             return [{"error": f"JSON Parse Error: {str(e)}", "raw": response}]
 
     async def review_code(self, code: str, requirements: str = "", model: str = None) -> str:
-        engine = get_ai_engine()
+        code = self._normalize_text(code)
+        requirements = self._normalize_text(requirements)
+        if not code:
+            raise HTTPException(status_code=400, detail="code must not be empty")
         prompt = (
             "You are a Senior Engineer using the 'Code Review' superpower.\n"
             "Review the following code strictly against the requirements and best practices.\n"
@@ -92,10 +108,13 @@ class SuperpowersService:
             f"Requirements: {requirements}\n"
             f"Code:\n{code}\n"
         )
-        return await engine.generate_content(model, prompt)
+        return await self._generate(model, prompt)
 
     async def generate_tests(self, feature_spec: str, existing_code: str = "", model: str = None) -> str:
-        engine = get_ai_engine()
+        feature_spec = self._normalize_text(feature_spec)
+        existing_code = self._normalize_text(existing_code)
+        if not feature_spec:
+            raise HTTPException(status_code=400, detail="feature_spec must not be empty")
         prompt = (
             "You are a QA Engineer using the 'Test Driven Development' superpower.\n"
             "Write a comprehensive pytest suite for the following feature specification.\n"
@@ -104,10 +123,13 @@ class SuperpowersService:
             f"Feature Spec: {feature_spec}\n"
             f"Existing Code Context: {existing_code}\n"
         )
-        return await engine.generate_content(model, prompt)
+        return await self._generate(model, prompt)
 
     async def systematic_debug(self, error_log: str, code_snippet: str = "", model: str = None) -> str:
-        engine = get_ai_engine()
+        error_log = self._normalize_text(error_log)
+        code_snippet = self._normalize_text(code_snippet)
+        if not error_log:
+            raise HTTPException(status_code=400, detail="error_log must not be empty")
         prompt = (
             "You are a Debugging Specialist using the 'Systematic Debugging' superpower.\n"
             "Apply the 4-phase root cause analysis process:\n"
@@ -118,7 +140,7 @@ class SuperpowersService:
             f"Error Log:\n{error_log}\n"
             f"Code Snippet:\n{code_snippet}\n"
         )
-        return await engine.generate_content(model, prompt)
+        return await self._generate(model, prompt)
 
 # --- Component Setup ---
 
