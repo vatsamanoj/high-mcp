@@ -1,0 +1,15 @@
+{
+  "api_endpoint": "https://api.example.com",
+  "api_key": "key_B",
+  "provider": "google",
+  "models": [
+    {
+      "model": "test-model",
+      "rpm": {
+        "limit": 10
+      },
+      "category": "fast",
+      "tier": "standard"
+    }
+  ]
+}

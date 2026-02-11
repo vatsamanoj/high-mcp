@@ -1,0 +1,11 @@
+mcp[cli]
+pandas
+openpyxl
+fakeredis
+redis
+httpx
+playwright
+beautifulsoup4
+fastapi
+uvicorn
+apscheduler

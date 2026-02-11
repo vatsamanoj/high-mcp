@@ -1,0 +1,42 @@
+[
+  {
+    "id": "verify-test-20260210",
+    "error_id": "manual-verify",
+    "created_at": "2026-02-10T12:00:00",
+    "analysis": {
+      "what": "Verification Test"
+    },
+    "code_change": "\ndef setup(app=None, **kwargs):\n    print(\"Verification Component Loaded\")\n",
+    "verification_code": "",
+    "status": "pending",
+    "confidence": 1.0,
+    "simulation_result": {
+      "success": true,
+      "message": "\u2705 All system tests passed.",
+      "details": "Checks: Syntax Check: passed, Contract Check: passed, Runtime Import: passed",
+      "raw_results": {
+        "name": "patched_component",
+        "timestamp": "e67469d8-7648-408b-9c60-e43929eef9fe",
+        "checks": [
+          {
+            "name": "Syntax Check",
+            "status": "passed",
+            "message": "Code structure is valid"
+          },
+          {
+            "name": "Contract Check",
+            "status": "passed",
+            "message": "Found 'setup' function"
+          },
+          {
+            "name": "Runtime Import",
+            "status": "passed",
+            "message": "Component loads without crashing"
+          }
+        ],
+        "passed": true,
+        "errors": []
+      }
+    }
+  }
+]

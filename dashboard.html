@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-MCP Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --card-bg: #1e293b;
+            --hover-bg: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --border-color: #334155;
+            --sidebar-width: 260px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        aside {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            transition: width 0.3s;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .brand span { color: var(--accent-color); }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        nav li { margin-bottom: 5px; }
+
+        nav button {
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        nav button:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        nav button.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 { margin: 0; font-size: 24px; font-weight: 600; }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .view-section.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Cards */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Grid Layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            text-align: left;
+            padding: 12px 15px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-color);
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        tr:last-child td { border-bottom: none; }
+
+        /* Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .badge-free { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .badge-econ { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .badge-std { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .badge-fast { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+        .badge-slow { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+
+        /* Status Dots */
+        .status-dot {
+            height: 8px; width: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-ok { background-color: var(--success-color); box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+        .status-blocked { background-color: var(--danger-color); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+
+        /* Controls */
+        button.action-btn {
+            background-color: var(--hover-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        button.action-btn:hover {
+            background-color: var(--border-color);
+        }
+        button.primary-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+        }
+        button.primary-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-color);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* File Upload */
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s;
+            background-color: rgba(255,255,255,0.02);
+            cursor: pointer;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--accent-color);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        /* Logs & Patches */
+        .log-list {
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .log-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .log-item:last-child { border-bottom: none; }
+        .log-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .log-msg { color: var(--text-secondary); line-height: 1.4; }
+
+        /* Chat UI */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 100px);
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .message {
+            display: flex;
+            gap: 15px;
+            max-width: 80%;
+        }
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        .message-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .message.user .message-avatar { background-color: var(--accent-color); }
+        .message.ai .message-avatar { background-color: var(--success-color); }
+        
+        .message-content {
+            background-color: rgba(255,255,255,0.05);
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        .message.user .message-content {
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 12px 2px 12px 12px;
+        }
+        .message.ai .message-content {
+            border-radius: 2px 12px 12px 12px;
+        }
+        
+        .chat-input-area {
+            padding: 20px;
+            background-color: rgba(0,0,0,0.2);
+            border-top: 1px solid var(--border-color);
+        }
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .chat-input {
+            flex: 1;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+        }
+        .chat-input:focus { outline: none; border-color: var(--accent-color); }
+        
+        .attach-btn {
+            padding: 12px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .attach-btn:hover { border-color: var(--text-primary); color: var(--text-primary); }
+        
+        .image-preview {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            overflow-x: auto;
+        }
+        .preview-item {
+            position: relative;
+            width: 60px; height: 60px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-size: cover;
+            background-position: center;
+        }
+        .preview-remove {
+            position: absolute;
+            top: -5px; right: -5px;
+            width: 18px; height: 18px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 0;
+            align-items: center;
+            height: 24px;
+        }
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Superpower Tabs */
+        .sp-tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+        .sp-tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-secondary); }
+        .sp-tab:hover { color: var(--text-primary); }
+        .sp-tab.active { border-bottom-color: var(--accent-color); color: var(--accent-color); font-weight: 500; }
+        .sp-content { display: none; }
+        .sp-content.active { display: block; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside>
+        <div class="brand">
+            <span>⚡</span> High-MCP
+        </div>
+        <nav>
+            <ul>
+                <li><button class="active" onclick="switchView('dashboard')">📊 Dashboard</button></li>
+                <li><button onclick="switchView('chat')">💬 Chat AI</button></li>
+                <li><button onclick="switchView('coder')">🤖 AI Coder</button></li>
+                <li><button onclick="switchView('templates')">📝 Templates</button></li>
+                <li><button onclick="switchView('models')">🤖 Models & Quotas</button></li>
+                <li><button onclick="switchView('autofix')">🔧 Auto-Fix & Health</button></li>
+                <li><button onclick="switchView('versions')">🛡️ Versions & Trust</button></li>
+                <li><button onclick="switchView('files')">📂 File Management</button></li>
+                <li><button onclick="switchView('superpowers')">🦸 Superpowers</button></li>
+                <li><button onclick="switchView('plugins')">🔌 Plugins</button></li>
+            </ul>
+        </nav>
+        <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);">
+            <p>Status: <span style="color:var(--success-color)">Online</span></p>
+            <p>Version: 1.2.0</p>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+        
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="view-section active">
+            <header>
+                <h1>System Overview</h1>
+                <div>
+                    <button class="action-btn" onclick="fetchStatus()">Refresh Data</button>
+                    <button class="action-btn" onclick="reloadConfig()">Reload Config</button>
+                </div>
+            </header>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h2>Global Speed Override</h2>
+                        <p style="color:var(--text-secondary);">Force priority to <strong>Speed</strong> regardless of Cost Tier.</p>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <span id="speed-label" style="font-weight:600; font-size:14px;">Standard Mode</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="speed-toggle" onchange="toggleSpeed()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <h3 style="color:var(--text-secondary); font-size:14px; margin-top:0;">Active Models</h3>
+                    <div id="stat-active-models" style="font-size:32px; font-weight:600;">--</div>
+                </div>
+                <div class="card">
+                    <h3 style="color:var(--text-secondary); font-size:14px; margin-top:0;">Blocked Models</h3>
+                    <div id="stat-blocked-models" style="font-size:32px; font-weight:600; color:var(--danger-color)">--</div>
+                </div>
+                <div class="card">
+                    <h3 style="color:var(--text-secondary); font-size:14px; margin-top:0;">System Health</h3>
+                    <div style="font-size:32px; font-weight:600; color:var(--success-color)">Good</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHAT VIEW -->
+        <div id="view-chat" class="view-section">
+            <header>
+                <h1>Chat with AI</h1>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <select id="chat-model-select" style="padding:8px; border-radius:6px; background:var(--card-bg); color:var(--text-primary); border:1px solid var(--border-color);">
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+            </header>
+
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message ai">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">Hello! How can I help you today? You can also upload images for me to analyze.</div>
+                    </div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <div id="image-preview" class="image-preview"></div>
+                    <div class="input-wrapper">
+                        <button class="attach-btn" onclick="document.getElementById('chat-file-input').click()" title="Attach Image">
+                            📎
+                        </button>
+                        <input type="file" id="chat-file-input" style="display:none" multiple onchange="handleChatUpload(this)">
+                        
+                        <textarea id="chat-input" class="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMessage();}"></textarea>
+                        
+                        <button class="primary-btn" style="padding:12px 20px; border-radius:8px;" onclick="sendMessage()">
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEMPLATES VIEW -->
+        <div id="view-templates" class="view-section">
+            <header>
+                <h1>Prompt Templates</h1>
+                <button class="action-btn" onclick="fetchTemplates()">Refresh List</button>
+            </header>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>Add New Template</h2>
+                    <div style="display:flex; flex-direction:column; gap:15px;">
+                        <div>
+                            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Pattern (Regex)</label>
+                            <input type="text" id="tmpl-pattern" placeholder="e.g. Extract invoice data: (.*)" style="width:100%; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px;">
+                            <small style="color:var(--text-secondary);">Use (.*) to capture content for formatting.</small>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Format (JSON/Text)</label>
+                            <textarea id="tmpl-format" placeholder='{"field": "{0}"}' style="width:100%; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px; min-height:100px; font-family:monospace;"></textarea>
+                            <small style="color:var(--text-secondary);">Use {0}, {1}... to insert captured groups.</small>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Description</label>
+                            <input type="text" id="tmpl-desc" placeholder="e.g. Invoice Extractor" style="width:100%; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px;">
+                        </div>
+                        <button class="primary-btn" onclick="saveTemplate()">Save Template</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Existing Templates</h2>
+                    <div id="templates-list" class="log-list" style="max-height:600px;">
+                        <p style="text-align:center; color:var(--text-secondary)">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODELS VIEW -->
+        <div id="view-models" class="view-section">
+            <header>
+                <h1>Models & Quotas</h1>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <label style="display:flex; align-items:center; gap:5px; font-size:14px; cursor:pointer; color:var(--text-secondary);">
+                        <input type="checkbox" id="show-active-only" onchange="fetchStatus()" checked> 
+                        Show Active Only
+                    </label>
+                    <button class="action-btn" onclick="fetchStatus()">Refresh</button>
+                </div>
+            </header>
+            <div class="card">
+                <table id="models-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('model')" data-col="model" style="cursor:pointer">Model Name ↕</th>
+                            <th onclick="sortTable('tier')" data-col="tier" style="cursor:pointer">Tier ↕</th>
+                            <th onclick="sortTable('category')" data-col="category" style="cursor:pointer">Category ↕</th>
+                            <th onclick="sortTable('providers')" data-col="providers" style="cursor:pointer">Provider ↕</th>
+                            <th onclick="sortTable('status')" data-col="status" style="cursor:pointer">Status ↕</th>
+                            <th onclick="sortTable('rpm_used')" data-col="rpm_used" style="cursor:pointer">RPM Used ↕</th>
+                            <th onclick="sortTable('rpd_used')" data-col="rpd_used" style="cursor:pointer">RPD Used ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody><!-- Populated by JS --></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AUTO-FIX VIEW -->
+        <div id="view-autofix" class="view-section">
+            <header>
+                <h1>Auto-Fix & System Health</h1>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <span id="autofix-status">Auto-Fix: OFF</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autofix-toggle" onchange="updateAutoFixConfig()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </header>
+
+            <div class="card">
+                <h2>Configuration</h2>
+                <div class="grid-2">
+                    <div>
+                        <label style="display:block; margin-bottom:8px; color:var(--text-secondary);">Schedule Interval (minutes)</label>
+                        <input type="number" id="af-interval" value="60" min="1" style="width:100%; padding:8px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px;" onchange="updateAutoFixConfig()">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom:8px; color:var(--text-secondary);">Confidence Threshold (0.0 - 1.0)</label>
+                        <input type="number" id="af-confidence" value="0.9" step="0.1" min="0" max="1" style="width:100%; padding:8px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px;" onchange="updateAutoFixConfig()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>Recent Errors</h2>
+                    <div id="errors-list" class="log-list">
+                        <p style="text-align:center; color:var(--text-secondary)">Loading...</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Suggested Patches</h2>
+                    <div id="patches-list" class="log-list">
+                        <p style="text-align:center; color:var(--text-secondary)">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VERSIONS VIEW -->
+        <div id="view-versions" class="view-section">
+            <header>
+                <h1>Versions & Trust System</h1>
+                <button class="action-btn" onclick="fetchVersions()">Refresh List</button>
+            </header>
+            
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div>
+                        <h2 style="margin:0;">Current Version</h2>
+                        <div id="current-version-display" style="color:var(--accent-color); font-size:18px; margin-top:5px; font-weight:600;">--</div>
+                    </div>
+                </div>
+                
+                <h3>Version History (Snapshots)</h3>
+                <table id="versions-table">
+                    <thead>
+                        <tr>
+                            <th>Version ID</th>
+                            <th>Timestamp</th>
+                            <th>Label</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody><!-- Populated by JS --></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FILES VIEW -->
+        <div id="view-files" class="view-section">
+            <header>
+                <h1>Quota File Management</h1>
+                <button class="action-btn" onclick="fetchFiles()">Refresh List</button>
+            </header>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>Upload Quota</h2>
+                    <div id="drop-zone" class="drop-zone">
+                        <div style="font-size:40px; margin-bottom:10px;">📄</div>
+                        <p style="margin:0; font-size:16px; font-weight:500;">Drag & Drop JSON files</p>
+                        <p style="margin:5px 0 0; color:var(--text-secondary); font-size:14px;">or click to browse</p>
+                        <input type="file" id="file-input" style="display: none;" accept=".json">
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Existing Files</h2>
+                    <ul id="file-list" style="list-style:none; padding:0; margin:0;"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI CODER VIEW -->
+        <div id="view-coder" class="view-section">
+            <header>
+                <h1>AI Coder (Project Awareness)</h1>
+            </header>
+            <div class="grid-2">
+                <div class="card">
+                    <h2>Instruction</h2>
+                    <div style="margin-bottom:15px; display:flex; gap:15px; align-items:center;">
+                        <div style="flex:1;">
+                            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Model</label>
+                            <select id="coder-model-select" style="width:100%; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px;">
+                                <option>Loading...</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:5px; margin-top:20px;">
+                            <input type="checkbox" id="use-claude-cli" onchange="toggleCoderMode()">
+                            <label for="use-claude-cli" style="cursor:pointer; color:var(--accent-color); font-weight:600;">Use Claude Code CLI</label>
+                            <small style="display:block; margin-left:10px; color:var(--text-secondary); cursor:pointer; text-decoration:underline;" onclick="alert('Run this in your terminal once to set up authentication:\\n\\nnpx -y @anthropic-ai/claude-code')">First time? Setup info</small>
+                        </div>
+                        <div id="claude-settings" style="display:none; margin-top:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:4px;">
+                             <label style="display:block; margin-bottom:5px; font-size:12px;">Anthropic API Key (Optional)</label>
+                             <input type="password" id="claude-api-key" placeholder="sk-..." style="width:100%; padding:5px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:4px; margin-bottom:10px;">
+                             
+                             <label style="display:block; margin-bottom:5px; font-size:12px;">Custom API Base URL (Optional)</label>
+                             <input type="text" id="claude-api-base" placeholder="e.g. http://localhost:9999" style="width:100%; padding:5px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:4px;">
+                        </div>
+                    </div>
+                    <textarea id="coder-prompt" placeholder="Describe what you want to build or modify in this project..." style="width:100%; height:200px; padding:15px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px; resize:vertical; font-family:monospace; margin-bottom:15px;"></textarea>
+                    <div style="text-align:right;">
+                        <button class="primary-btn" onclick="generatePatch()" id="btn-gen-patch">Generate Patch</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Patch Preview / Simulator</h2>
+                    <div id="coder-preview" style="height:300px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:6px; margin-bottom:15px; font-family:monospace; white-space:pre-wrap; color:var(--text-secondary); border:1px solid var(--border-color);">
+                        <p style="text-align:center; margin-top:100px;">Generated patches will appear here.</p>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span id="patch-status" style="font-size:13px; color:var(--text-secondary);"></span>
+                        <button class="primary-btn" onclick="applyPatch()" id="btn-apply-patch" style="background-color:var(--success-color); display:none;">Apply Patch</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUPERPOWERS VIEW -->
+        <div id="view-superpowers" class="view-section">
+            <header>
+                <h1>Agent Superpowers</h1>
+            </header>
+            
+            <div class="card">
+                <div class="sp-tabs">
+                    <div class="sp-tab active" onclick="switchSPTab('brainstorm')">Brainstorm</div>
+                    <div class="sp-tab" onclick="switchSPTab('plan')">Plan</div>
+                    <div class="sp-tab" onclick="switchSPTab('tdd')">TDD</div>
+                    <div class="sp-tab" onclick="switchSPTab('review')">Review</div>
+                    <div class="sp-tab" onclick="switchSPTab('debug')">Debug</div>
+                </div>
+
+                <!-- Brainstorm -->
+                <div id="sp-brainstorm" class="sp-content active">
+                    <label style="display:block; margin-bottom:5px;">Problem / Idea</label>
+                    <textarea id="sp-brainstorm-input" class="chat-input" style="height:100px; width:100%; margin-bottom:10px;" placeholder="Describe the problem or feature idea..."></textarea>
+                    <label style="display:block; margin-bottom:5px;">Context (Optional)</label>
+                    <textarea id="sp-brainstorm-context" class="chat-input" style="height:60px; width:100%; margin-bottom:10px;" placeholder="Additional context (e.g. current architecture)..."></textarea>
+                    <button class="primary-btn" onclick="runSuperpower('brainstorm')">Start Brainstorming</button>
+                    <div id="sp-brainstorm-out" class="log-list" style="margin-top:20px; min-height:100px; white-space: pre-wrap;"></div>
+                </div>
+
+                <!-- Plan -->
+                <div id="sp-plan" class="sp-content">
+                    <label style="display:block; margin-bottom:5px;">Design Document / Spec</label>
+                    <textarea id="sp-plan-input" class="chat-input" style="height:200px; width:100%; margin-bottom:10px;" placeholder="Paste the design document here..."></textarea>
+                    <button class="primary-btn" onclick="runSuperpower('plan')">Create Plan</button>
+                    <div id="sp-plan-out" class="log-list" style="margin-top:20px; min-height:100px;"></div>
+                </div>
+
+                <!-- TDD -->
+                <div id="sp-tdd" class="sp-content">
+                    <label style="display:block; margin-bottom:5px;">Feature Requirement</label>
+                    <textarea id="sp-tdd-input" class="chat-input" style="height:100px; width:100%; margin-bottom:10px;" placeholder="Describe the feature to test..."></textarea>
+                    <button class="primary-btn" onclick="runSuperpower('tdd')">Generate Tests</button>
+                    <div id="sp-tdd-out" class="log-list" style="margin-top:20px; min-height:100px; font-family:monospace; white-space: pre-wrap;"></div>
+                </div>
+
+                <!-- Review -->
+                <div id="sp-review" class="sp-content">
+                    <label style="display:block; margin-bottom:5px;">Code to Review</label>
+                    <textarea id="sp-review-input" class="chat-input" style="height:200px; width:100%; margin-bottom:10px;" placeholder="Paste code here..."></textarea>
+                    <button class="primary-btn" onclick="runSuperpower('review')">Review Code</button>
+                    <div id="sp-review-out" class="log-list" style="margin-top:20px; min-height:100px; white-space: pre-wrap;"></div>
+                </div>
+
+                <!-- Debug -->
+                <div id="sp-debug" class="sp-content">
+                    <label style="display:block; margin-bottom:5px;">Error Logs / Traceback</label>
+                    <textarea id="sp-debug-input" class="chat-input" style="height:200px; width:100%; margin-bottom:10px;" placeholder="Paste error logs here..."></textarea>
+                    <button class="primary-btn" onclick="runSuperpower('debug')">Analyze Error</button>
+                    <div id="sp-debug-out" class="log-list" style="margin-top:20px; min-height:100px; white-space: pre-wrap;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plugins View -->
+        <div id="view-plugins" class="view-section">
+            <header>
+                <h1>Runtime Plugins</h1>
+                <button class="action-btn" onclick="fetchComponents()">🔄 Refresh</button>
+            </header>
+            <div class="card">
+                <h2>Active Components & Plugins</h2>
+                <div style="overflow-x:auto;">
+                    <table id="plugins-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Path</th>
+                                <th>Routes</th>
+                                <th>Services</th>
+                                <th>Last Modified</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const API_BASE = 'http://localhost:8004/api';
+        let autofixConfig = {};
+        let pendingAttachments = []; // Stores {type, mime_type, data, name, content, previewUrl}
+        let lastModels = [];
+        let currentSort = { column: 'tier', dir: 'asc' };
+        let currentPatches = null;
+        let currentPlan = null; // Store the latest generated plan
+
+        // --- Navigation ---
+        function switchView(viewName) {
+            // Update Nav Buttons
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active'); 
+
+            // Update Views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            
+            if (viewName === 'chat') {
+                fetchChatModels();
+            } else if (viewName === 'templates') {
+                fetchTemplates();
+            } else if (viewName === 'coder') {
+                fetchCoderModels();
+            } else if (viewName === 'plugins') {
+                fetchComponents();
+            }
+        }
+
+        // --- Data Fetching ---
+        async function fetchComponents() {
+            try {
+                const res = await fetch(`${API_BASE}/components`);
+                const data = await res.json();
+                const tbody = document.querySelector('#plugins-table tbody');
+                tbody.innerHTML = '';
+                data.components.forEach(c => {
+                    const tr = document.createElement('tr');
+                    // Highlight if it's a plugin (in plugins/ dir)
+                    const isPlugin = c.file_path.includes('plugins');
+                    const nameHtml = isPlugin ? `<span style="color:var(--accent-color)">${c.name}</span> <span class="badge badge-std">Plugin</span>` : c.name;
+                    
+                    tr.innerHTML = `
+                        <td>${nameHtml}</td>
+                        <td style="font-size:12px; color:var(--text-secondary)">${c.file_path}</td>
+                        <td>${c.routes}</td>
+                        <td>${c.services.join(', ')}</td>
+                        <td>${c.mtime ? new Date(c.mtime * 1000).toLocaleString() : '-'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) { console.error("Fetch components error", e); }
+        }
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                lastModels = data.models;
+                updateDashboard(data);
+                updateModelsTable(data.models);
+            } catch (e) { console.error("Fetch status error", e); }
+        }
+
+        function updateDashboard(data) {
+            // Speed Toggle
+            const toggle = document.getElementById('speed-toggle');
+            const label = document.getElementById('speed-label');
+            toggle.checked = data.speed_override;
+            label.textContent = data.speed_override ? "🚀 SPEED PRIORITY" : "Standard Mode";
+            label.style.color = data.speed_override ? "var(--accent-color)" : "var(--text-primary)";
+
+            // Stats
+            const active = data.models.filter(m => m.available).length;
+            const blocked = data.models.length - active;
+            document.getElementById('stat-active-models').textContent = active;
+            document.getElementById('stat-blocked-models').textContent = blocked;
+        }
+
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.dir = 'asc';
+            }
+            updateModelsTable(lastModels);
+        }
+
+        function updateModelsTable(models) {
+            const showActiveOnly = document.getElementById('show-active-only')?.checked;
+            const tbody = document.querySelector('#models-table tbody');
+            tbody.innerHTML = '';
+            
+            // Sort
+            models.sort((a, b) => {
+                let valA = a[currentSort.column];
+                let valB = b[currentSort.column];
+
+                if (currentSort.column === 'tier') {
+                    const tierOrder = { "free": 1, "economical": 2, "standard": 3, "premium": 4 };
+                    valA = tierOrder[valA] || 3;
+                    valB = tierOrder[valB] || 3;
+                } else if (currentSort.column === 'providers') {
+                     valA = (valA || []).join(', ').toLowerCase();
+                     valB = (valB || []).join(', ').toLowerCase();
+                } else if (currentSort.column === 'status') {
+                     valA = a.available ? 1 : 0;
+                     valB = b.available ? 1 : 0;
+                } else if (typeof valA === 'string') {
+                    valA = valA.toLowerCase();
+                    valB = valB.toLowerCase();
+                }
+
+                if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            models.forEach(model => {
+                if (showActiveOnly && !model.available) return;
+
+                const tr = document.createElement('tr');
+                const isAvail = model.available;
+                const providersStr = (model.providers || []).join(', ');
+                
+                tr.innerHTML = `
+                    <td style="font-weight:500; display:flex; align-items:center;">
+                        <span class="status-dot ${isAvail ? 'status-ok' : 'status-blocked'}"></span>
+                        ${model.model}
+                    </td>
+                    <td><span class="badge badge-${(model.tier || 'std').toLowerCase().substring(0,4)}">${model.tier}</span></td>
+                    <td>${model.category}</td>
+                    <td>${providersStr}</td>
+                    <td style="color:${isAvail ? 'var(--success-color)' : 'var(--danger-color)'}">${isAvail ? 'Active' : 'Blocked'}</td>
+                    <td>${model.rpm_used.toFixed(1)} / ${formatLimit(model.rpm_limit)}</td>
+                    <td>${model.rpd_used.toFixed(1)} / ${formatLimit(model.rpd_limit)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Update header arrows
+            document.querySelectorAll('#models-table th').forEach(th => {
+                const col = th.getAttribute('data-col');
+                if (col) {
+                    th.textContent = th.textContent.replace(/ [↑↓↕]/, '');
+                    if (col === currentSort.column) {
+                        th.textContent += currentSort.dir === 'asc' ? ' ↑' : ' ↓';
+                    } else {
+                        th.textContent += ' ↕';
+                    }
+                }
+            });
+        }
+
+        // --- Speed Toggle ---
+        async function toggleSpeed() {
+            const toggle = document.getElementById('speed-toggle');
+            try {
+                await fetch(`${API_BASE}/toggle_speed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: toggle.checked })
+                });
+                fetchStatus();
+            } catch (e) { console.error("Toggle speed error", e); toggle.checked = !toggle.checked; }
+        }
+
+        // --- Template Functions ---
+        async function fetchTemplates() {
+            try {
+                const response = await fetch(`${API_BASE}/templates`);
+                const data = await response.json();
+                const list = document.getElementById('templates-list');
+                list.innerHTML = '';
+
+                if (!data.templates || data.templates.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; color:var(--text-secondary)">No templates found.</p>';
+                    return;
+                }
+
+                data.templates.forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = 'log-item';
+                    item.innerHTML = `
+                        <div class="log-header">
+                            <span style="font-weight:600; color:var(--accent-color);">${t.description || 'No Description'}</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">ID: ${t.id}</span>
+                        </div>
+                        <div style="font-family:monospace; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px; margin-bottom:5px; font-size:12px; overflow-x:auto;">
+                            <div style="color:var(--warning-color); margin-bottom:2px;">Pattern: ${t.pattern.replace(/</g, '&lt;')}</div>
+                            <div style="color:var(--success-color);">Format: ${t.format.substring(0, 100).replace(/</g, '&lt;')}${t.format.length > 100 ? '...' : ''}</div>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (e) { console.error("Fetch templates error", e); }
+        }
+
+        async function saveTemplate() {
+            const pattern = document.getElementById('tmpl-pattern').value;
+            const format = document.getElementById('tmpl-format').value;
+            const desc = document.getElementById('tmpl-desc').value;
+
+            if (!pattern || !format) {
+                alert("Pattern and Format are required.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/templates`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pattern: pattern, format_str: format, description: desc })
+                });
+                
+                if (response.ok) {
+                    alert("Template saved!");
+                    document.getElementById('tmpl-pattern').value = '';
+                    document.getElementById('tmpl-format').value = '';
+                    document.getElementById('tmpl-desc').value = '';
+                    fetchTemplates();
+                } else {
+                    alert("Error saving template");
+                }
+            } catch (e) { console.error("Save template error", e); alert("Error saving template"); }
+        }
+
+        // --- Chat Functions ---
+        async function fetchChatModels() {
+            const select = document.getElementById('chat-model-select');
+            if (select.options.length > 1) return; // Already loaded
+
+            try {
+                const response = await fetch(`${API_BASE}/chat/models`);
+                const data = await response.json();
+                
+                select.innerHTML = '';
+                const models = data.models.filter(m => m.available).sort((a,b) => a.model.localeCompare(b.model));
+                
+                if (models.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.text = "No active models";
+                    select.add(opt);
+                    return;
+                }
+
+                models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.model;
+                    opt.text = `${m.model} (${m.category || 'General'})`;
+                    select.add(opt);
+                });
+            } catch (e) { console.error("Fetch chat models error", e); }
+        }
+
+        function handleChatUpload(input) {
+            const files = input.files;
+            if (!files.length) return;
+
+            Array.from(files).forEach(file => {
+                // 1. Images & PDFs (Binary for backend)
+                // Note: For Gemini, PDF is treated as inline_data like images
+                if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const base64Data = e.target.result.split(',')[1];
+                        pendingAttachments.push({ 
+                            type: file.type === 'application/pdf' ? 'pdf' : 'image',
+                            mime_type: file.type, 
+                            data: base64Data,
+                            name: file.name,
+                            previewUrl: file.type === 'application/pdf' ? null : e.target.result
+                        });
+                        renderAttachments();
+                    };
+                    reader.readAsDataURL(file);
+                } 
+                // 2. Everything else -> Treat as Text
+                else {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        pendingAttachments.push({
+                            type: 'text',
+                            name: file.name,
+                            content: e.target.result,
+                            mime_type: 'text/plain' // Backend sees this as text content
+                        });
+                        renderAttachments();
+                    };
+                    // Try to read as text. If it fails (binary), we might need a fallback, 
+                    // but for "code files" and "txt", this works.
+                    // If the user uploads a binary file (exe, zip), this might produce garbage,
+                    // but we will attempt to send it as text content for analysis.
+                    reader.readAsText(file);
+                }
+            });
+            input.value = ''; // Reset
+        }
+
+        function renderAttachments() {
+            const container = document.getElementById('image-preview');
+            container.innerHTML = '';
+            
+            pendingAttachments.forEach((att, idx) => {
+                const div = document.createElement('div');
+                div.className = 'preview-item';
+                
+                if (att.type === 'image') {
+                    div.style.backgroundImage = `url(${att.previewUrl})`;
+                } else {
+                    // Text or PDF icon
+                    div.style.display = 'flex';
+                    div.style.alignItems = 'center';
+                    div.style.justifyContent = 'center';
+                    div.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                    div.style.flexDirection = 'column';
+                    div.style.fontSize = '10px';
+                    div.style.overflow = 'hidden';
+                    
+                    let icon = '📄';
+                    if (att.type === 'text') icon = '📝';
+                    if (att.type === 'pdf') icon = '📕';
+                    
+                    div.innerHTML = `<div style="font-size:20px">${icon}</div><div style="width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px;">${att.name}</div>`;
+                }
+
+                const removeBtn = document.createElement('div');
+                removeBtn.className = 'preview-remove';
+                removeBtn.innerHTML = '×';
+                removeBtn.onclick = () => {
+                    pendingAttachments.splice(idx, 1);
+                    renderAttachments();
+                };
+                
+                div.appendChild(removeBtn);
+                container.appendChild(div);
+            });
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            let message = input.value.trim();
+            const modelSelect = document.getElementById('chat-model-select');
+            const model = modelSelect.value;
+            
+            // Allow empty message to check cache/history
+            // if (!message && pendingAttachments.length === 0) return;
+            
+            if (!model) { alert("Please select a model first."); return; }
+
+            // Process Attachments
+            const textAttachments = pendingAttachments.filter(a => a.type === 'text');
+            const binaryAttachments = pendingAttachments.filter(a => a.type === 'image' || a.type === 'pdf');
+
+            // Append text files to message
+            if (textAttachments.length > 0) {
+                const fileContext = textAttachments.map(f => `\n--- File: ${f.name} ---\n${f.content}\n--- End of File ---`).join('\n');
+                if (message) message += "\n";
+                message += fileContext;
+            }
+
+            // Prepare images/media for API
+            const apiImages = binaryAttachments.map(a => ({
+                mime_type: a.mime_type,
+                data: a.data
+            }));
+
+            // 1. Render User Message
+            addMessageToChat('user', input.value.trim(), [...pendingAttachments]); 
+
+            // Clear Input
+            input.value = '';
+            pendingAttachments = [];
+            renderAttachments();
+
+            // 2. Render Loading
+            const loadingHtml = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+            const loadingId = addMessageToChat('ai', loadingHtml);
+
+            // 3. Send API Request
+            try {
+                const loadingMsg = document.querySelector(`[data-id="${loadingId}"] .message-content`);
+                
+                // Add status updates for long waits
+                const longWaitTimer = setTimeout(() => {
+                    if (loadingMsg) loadingMsg.innerHTML += '<br><br><small style="color:var(--text-secondary)">Still working... performing deep reasoning or trying multiple models.</small>';
+                }, 15000);
+                
+                const veryLongWaitTimer = setTimeout(() => {
+                    if (loadingMsg) loadingMsg.innerHTML += '<br><small style="color:var(--warning-color)">Taking longer than usual (retrying providers)... Please wait up to 2 minutes.</small>';
+                }, 45000);
+
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: model,
+                        message: message,
+                        images: apiImages.length > 0 ? apiImages : []
+                    })
+                });
+
+                clearTimeout(longWaitTimer);
+                clearTimeout(veryLongWaitTimer);
+
+                const data = await response.json();
+                
+                // Replace loading with response
+                // const loadingMsg = document.querySelector(`[data-id="${loadingId}"] .message-content`); // Already defined above
+                if (data.response) {
+                    loadingMsg.innerHTML = data.response.replace(/\n/g, '<br>');
+                } else if (data.detail) {
+                    let errorMsg = data.detail;
+                    if (typeof data.detail === 'object') {
+                        errorMsg = JSON.stringify(data.detail, null, 2);
+                    }
+                    loadingMsg.textContent = "Error: " + errorMsg;
+                    loadingMsg.style.color = "var(--danger-color)";
+                    // Also log to console for debugging
+                    console.error("Chat API Error:", data);
+                }
+            } catch (e) {
+                const loadingMsg = document.querySelector(`[data-id="${loadingId}"] .message-content`);
+                loadingMsg.textContent = "Network Error: " + e.message;
+                loadingMsg.style.color = "var(--danger-color)";
+            }
+        }
+
+        function addMessageToChat(role, text, images = []) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            const id = Date.now();
+            div.setAttribute('data-id', id);
+            
+            let avatar = role === 'user' ? '👤' : '🤖';
+            
+            let contentHtml = text.replace(/\n/g, '<br>');
+            if (images && images.length > 0) {
+                 const counts = images.reduce((acc, curr) => {
+                     const type = curr.type === 'image' ? 'Image' : (curr.type === 'pdf' ? 'PDF' : 'File');
+                     acc[type] = (acc[type] || 0) + 1;
+                     return acc;
+                 }, {});
+                 const summary = Object.entries(counts).map(([k,v]) => `${v} ${k}(s)`).join(', ');
+                 contentHtml += `<br><small style="opacity:0.7"><i>[Attached: ${summary}]</i></small>`;
+            }
+
+            div.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${contentHtml}</div>
+            `;
+            
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        async function reloadConfig() {
+            if(!confirm("Reload configuration?")) return;
+            try {
+                await fetch(`${API_BASE}/reload_config`, { method: 'POST' });
+                alert("Reloaded!");
+                fetchStatus();
+            } catch (e) { alert("Error reloading"); }
+        }
+
+        function formatLimit(val) { return val < 0 ? '∞' : val; }
+
+        // --- Auto-Fix ---
+        async function fetchAutoFixData() {
+            try {
+                // Config
+                const cRes = await fetch(`${API_BASE}/autofix/config`);
+                autofixConfig = await cRes.json();
+                
+                // Update UI elements
+                const afToggle = document.getElementById('autofix-toggle');
+                const afLabel = document.getElementById('autofix-status');
+                const afInterval = document.getElementById('af-interval');
+                const afConfidence = document.getElementById('af-confidence');
+
+                afToggle.checked = autofixConfig.auto_fix_enabled;
+                afInterval.value = autofixConfig.schedule_interval_minutes;
+                afConfidence.value = autofixConfig.auto_apply_confidence_threshold;
+                
+                afLabel.textContent = autofixConfig.auto_fix_enabled ? "Auto-Fix: ON" : "Auto-Fix: OFF";
+                afLabel.style.color = autofixConfig.auto_fix_enabled ? "var(--success-color)" : "var(--text-secondary)";
+
+                // Errors
+                const eRes = await fetch(`${API_BASE}/errors`);
+                const errors = await eRes.json();
+                renderErrors(errors);
+
+                // Patches
+                const pRes = await fetch(`${API_BASE}/patches`);
+                const patches = await pRes.json();
+                renderPatches(patches);
+
+            } catch (e) { console.error("Fetch autofix error", e); }
+        }
+
+        async function updateAutoFixConfig() {
+            const afToggle = document.getElementById('autofix-toggle');
+            const afInterval = document.getElementById('af-interval');
+            const afConfidence = document.getElementById('af-confidence');
+            
+            const newConfig = {
+                auto_fix_enabled: afToggle.checked,
+                schedule_interval_minutes: parseInt(afInterval.value),
+                auto_apply_confidence_threshold: parseFloat(afConfidence.value)
+            };
+            
+            try {
+                await fetch(`${API_BASE}/autofix/config`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(newConfig)
+                });
+                fetchAutoFixData(); // Refresh UI
+            } catch (e) { console.error("Update config error", e); }
+        }
+
+        function renderErrors(errors) {
+            const list = document.getElementById('errors-list');
+            if(errors.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--text-secondary)">No active errors.</p>'; return; }
+            
+            list.innerHTML = errors.reverse().slice(0, 10).map(e => `
+                <div class="log-item">
+                    <div class="log-header">
+                        <strong style="color:var(--danger-color)">${e.status.toUpperCase()}</strong>
+                        <span style="color:var(--text-secondary)">${new Date(e.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div class="log-msg">${e.message}</div>
+                    ${e.analysis ? `<div style="margin-top:5px; color:var(--accent-color); font-size:12px;">💡 ${e.analysis}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderPatches(patches) {
+            const list = document.getElementById('patches-list');
+            const pending = patches.filter(p => p.status === 'pending');
+            if(pending.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--text-secondary)">No pending patches.</p>'; return; }
+            
+            list.innerHTML = pending.reverse().map(p => {
+                const analysis = p.analysis || {};
+                const what = analysis.what || p.suggestion;
+                const why = analysis.why || "Analysis not available";
+                const remedy = Array.isArray(analysis.remedy) ? analysis.remedy.join('</li><li>') : "Manual steps";
+                const simResult = p.simulation_result ? 
+                    (p.simulation_result.success ? 
+                        `<span style="color:var(--success-color)">✅ Verified: ${p.simulation_result.message}</span>` : 
+                        `<span style="color:var(--danger-color)">❌ Failed: ${p.simulation_result.message}</span>`) 
+                    : '<span style="color:var(--text-secondary)">Not simulated yet</span>';
+
+                return `
+                <div class="log-item">
+                    <div class="log-header">
+                        <strong style="color:var(--success-color)">${(p.confidence*100).toFixed(0)}% Confidence</strong>
+                        <div style="display:flex; gap:5px;">
+                            <button class="primary-btn" style="padding:4px 8px; font-size:11px; background:var(--accent-color);" onclick="simulatePatch('${p.id}')">🧪 Simulate & Verify</button>
+                            <button class="primary-btn" style="padding:4px 8px; font-size:11px;" onclick="applyPatch('${p.id}')">Apply</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top:10px; font-size:13px;">
+                        <div style="font-weight:bold; color:var(--text-primary); margin-bottom:4px;">What Happened:</div>
+                        <div style="color:var(--text-secondary); margin-bottom:10px;">${what}</div>
+                        
+                        <div style="font-weight:bold; color:var(--text-primary); margin-bottom:4px;">Why it Happened:</div>
+                        <div style="color:var(--text-secondary); margin-bottom:10px;">${why}</div>
+
+                        <div style="font-weight:bold; color:var(--text-primary); margin-bottom:4px;">Remedy Plan:</div>
+                        <ul style="color:var(--text-secondary); margin-bottom:10px; padding-left:20px;">
+                            <li>${remedy}</li>
+                        </ul>
+
+                        <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:4px; margin-top:10px;">
+                            <strong>Simulation Status:</strong> ${simResult}
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        async function simulatePatch(id) {
+            const btn = event.target;
+            btn.textContent = "Simulating...";
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/patches/${id}/simulate`, { method: 'POST' });
+                const result = await res.json();
+                if(!result.success) alert("Simulation Failed: " + result.message);
+                fetchAutoFixData();
+            } catch(e) { alert("Error: " + e); }
+        }
+
+        async function applyPatch(id) {
+            if(!confirm("Apply patch? This will modify server code.")) return;
+            try {
+                const res = await fetch(`${API_BASE}/patches/${id}/apply`, { method: 'POST' });
+                const result = await res.json();
+                if(result.success) {
+                    alert("Patch Applied Successfully!");
+                } else {
+                    alert("Patch Failed: " + result.message);
+                }
+                fetchAutoFixData();
+            } catch(e) { alert("Error applying patch: " + e); }
+        }
+
+        // --- Versions & Trust ---
+        async function fetchVersions() {
+            try {
+                const res = await fetch(`${API_BASE}/versions`);
+                const data = await res.json();
+                renderVersions(data);
+            } catch(e) { console.error("Fetch versions error", e); }
+        }
+
+        function renderVersions(data) {
+            document.getElementById('current-version-display').textContent = data.current_version || "Unknown";
+            
+            const tbody = document.querySelector('#versions-table tbody');
+            tbody.innerHTML = '';
+            
+            if(!data.versions || data.versions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No snapshots found</td></tr>';
+                return;
+            }
+
+            // Show newest first
+            const sorted = [...data.versions].reverse();
+            
+            sorted.forEach(v => {
+                const tr = document.createElement('tr');
+                const isCurrent = v.id === data.current_version;
+                tr.innerHTML = `
+                    <td style="font-family:monospace;">${v.id}</td>
+                    <td>${new Date(v.timestamp).toLocaleString()}</td>
+                    <td>${v.label}</td>
+                    <td><span class="badge ${isCurrent ? 'badge-fast' : 'badge-std'}">${isCurrent ? 'Active' : 'Backup'}</span></td>
+                    <td>
+                        ${!isCurrent ? `<button class="action-btn" onclick="rollbackSystem('${v.id}')">Rollback To This</button>` : '<span style="color:var(--text-secondary); font-size:12px;">Current</span>'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function rollbackSystem(id) {
+            if(!confirm(`WARNING: Are you sure you want to rollback to version ${id}? This will revert code changes.`)) return;
+            try {
+                const res = await fetch(`${API_BASE}/rollback`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ version_id: id })
+                });
+                const result = await res.json();
+                if(result.success) {
+                    alert("Rollback Successful! The server state has been restored.");
+                    fetchVersions();
+                } else {
+                    alert("Rollback Failed: " + result.detail);
+                }
+            } catch(e) { alert("Error requesting rollback: " + e); }
+        }
+
+        // --- File Management ---
+        async function fetchFiles() {
+            try {
+                const res = await fetch(`${API_BASE}/quotas`);
+                const data = await res.json();
+                const list = document.getElementById('file-list');
+                list.innerHTML = data.files.map(f => `
+                    <li style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid var(--border-color); color:var(--text-primary);">
+                        <span>${f}</span>
+                        <button class="action-btn" style="color:var(--danger-color); border-color:var(--danger-color); padding:2px 8px;" onclick="deleteFile('${f}')">Delete</button>
+                    </li>
+                `).join('');
+            } catch(e) {}
+        }
+
+        async function deleteFile(f) {
+            if(!confirm(`Delete ${f}?`)) return;
+            await fetch(`${API_BASE}/quotas/${f}`, { method: 'DELETE' });
+            fetchFiles();
+        }
+
+        // Drag & Drop
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => { if(e.target.files.length) uploadFile(e.target.files[0]); };
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
+        dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+        dropZone.ondrop = (e) => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            if(e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+        };
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            await fetch(`${API_BASE}/quotas/upload`, { method: 'POST', body: formData });
+            alert("Uploaded!");
+            fetchFiles();
+        }
+
+        // --- Superpowers ---
+        function switchSPTab(tab) {
+            document.querySelectorAll('.sp-tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sp-content').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`sp-${tab}`).classList.add('active');
+        }
+
+        async function runSuperpower(skill) {
+            const out = document.getElementById(`sp-${skill}-out`);
+            out.innerHTML = '<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> Processing...';
+            
+            let body = {};
+            if (skill === 'brainstorm') {
+                body = { 
+                    problem: document.getElementById('sp-brainstorm-input').value,
+                    context: document.getElementById('sp-brainstorm-context').value
+                };
+            } else if (skill === 'plan') {
+                body = { design_doc: document.getElementById('sp-plan-input').value };
+            } else if (skill === 'tdd') {
+                body = { feature_spec: document.getElementById('sp-tdd-input').value };
+            } else if (skill === 'review') {
+                body = { code: document.getElementById('sp-review-input').value };
+            } else if (skill === 'debug') {
+                body = { error_log: document.getElementById('sp-debug-input').value };
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/superpowers/${skill}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                
+                let content = null;
+                if (skill === 'brainstorm') content = data.result;
+                else if (skill === 'plan') content = data.plan;
+                else if (skill === 'review') content = data.review;
+                else if (skill === 'tdd') content = data.test_code;
+                else if (skill === 'debug') content = data.analysis;
+                
+                if (!content && data) content = data;
+
+                if (skill === 'plan' && Array.isArray(content)) {
+                    // Store plan for "Send to Coder" feature
+                    currentPlan = content;
+                    
+                    out.innerHTML = `
+                        <div style="margin-bottom:15px;">
+                            <button class="primary-btn" style="background:var(--accent-color)" onclick="sendPlanToCoder()">🚀 Implement Plan with AI Coder</button>
+                        </div>
+                    ` + content.map(step => `
+                        <div style="margin-bottom:15px; border-left:3px solid var(--accent-color); padding-left:10px;">
+                            <div style="font-weight:600; color:var(--text-primary)">${step.step}. ${step.title}</div>
+                            <div style="color:var(--text-secondary); margin-bottom:5px;">${step.description}</div>
+                            <div style="font-size:12px; color:var(--text-secondary)">Files: ${(step.files||[]).join(', ')}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    let text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+                    out.innerHTML = text.replace(/\n/g, '<br>').replace(/```/g, ''); 
+                }
+            } catch (e) {
+                out.innerHTML = `<span style="color:var(--danger-color)">Error: ${e.message}</span>`;
+            }
+        }
+
+        // --- Init ---
+        setInterval(fetchStatus, 3000);
+        setInterval(fetchAutoFixData, 10000); // Poll for new patches
+        fetchStatus();
+        fetchFiles();
+        fetchAutoFixData();
+        fetchVersions();
+        fetchCoderModels();
+
+        // Sidebar Nav Button Highlight fix
+        document.querySelector('nav button').classList.add('active'); // Set first one active by default
+        async function fetchCoderModels() {
+            try {
+                const response = await fetch(`${API_BASE}/chat/models`);
+                const data = await response.json();
+                const select = document.getElementById('coder-model-select');
+                select.innerHTML = '';
+                
+                // Prioritize "Code" or "Premium" models
+                const models = data.models.sort((a, b) => {
+                    const tierOrder = { "premium": 1, "standard": 2, "economical": 3, "free": 4 };
+                    return (tierOrder[a.tier] || 5) - (tierOrder[b.tier] || 5);
+                });
+
+                if (!models.length) {
+                    const opt = document.createElement('option');
+                    opt.text = "No active models";
+                    select.add(opt);
+                    return;
+                }
+
+                models.forEach(m => {
+                    if (!m.available) return;
+                    const opt = document.createElement('option');
+                    opt.value = m.model;
+                    opt.text = `${m.model} (${m.tier} - ${m.category})`;
+                    if (m.model.toLowerCase().includes('claude') || m.model.toLowerCase().includes('gpt-4')) {
+                        opt.selected = true; // Auto-select capable models
+                    }
+                    select.add(opt);
+                });
+            } catch (e) { console.error("Fetch coder models error", e); }
+        }
+
+        function sendPlanToCoder() {
+            if (!currentPlan) return alert("No plan available to send.");
+            
+            // Format plan into a prompt
+            const planText = currentPlan.map(s => `${s.step}. ${s.title}\n   ${s.description} (Files: ${(s.files||[]).join(', ')})`).join('\n\n');
+            const fullPrompt = `Implement the following plan:\n\n${planText}\n\nStrictly follow the steps and file paths provided.`;
+            
+            // Switch view
+            switchView('coder');
+            
+            // Populate prompt
+            document.getElementById('coder-prompt').value = fullPrompt;
+            
+            // Optional: Auto-scroll or focus
+            document.getElementById('coder-prompt').focus();
+        }
+
+        function toggleCoderMode() {
+            const isClaude = document.getElementById('use-claude-cli').checked;
+            const select = document.getElementById('coder-model-select');
+            const btn = document.getElementById('btn-gen-patch');
+            const settings = document.getElementById('claude-settings');
+            
+            if (isClaude) {
+                select.disabled = true;
+                btn.textContent = "Run Claude Code";
+                settings.style.display = 'block';
+            } else {
+                select.disabled = false;
+                btn.textContent = "Generate Patch";
+                settings.style.display = 'none';
+            }
+        }
+
+        async function generatePatch() {
+            const prompt = document.getElementById('coder-prompt').value;
+            const model = document.getElementById('coder-model-select').value;
+            const useClaude = document.getElementById('use-claude-cli').checked;
+            const apiBase = document.getElementById('claude-api-base').value;
+            const apiKey = document.getElementById('claude-api-key').value;
+            
+            if (!prompt) return alert("Please enter a prompt.");
+            
+            const btn = document.getElementById('btn-gen-patch');
+            const preview = document.getElementById('coder-preview');
+            
+            btn.disabled = true;
+            btn.textContent = useClaude ? "Running Claude..." : "Generating...";
+            
+            // Clear previous results but prepare layout
+            preview.innerHTML = '';
+            
+            // Console Output Container
+            const consoleDiv = document.createElement('div');
+            consoleDiv.id = 'coder-console';
+            consoleDiv.style.backgroundColor = '#1e1e1e';
+            consoleDiv.style.color = '#0f0';
+            consoleDiv.style.fontFamily = 'monospace';
+            consoleDiv.style.padding = '15px';
+            consoleDiv.style.borderRadius = '8px';
+            consoleDiv.style.marginBottom = '20px';
+            consoleDiv.style.maxHeight = '300px';
+            consoleDiv.style.overflowY = 'auto';
+            consoleDiv.style.border = '1px solid var(--border-color)';
+            consoleDiv.innerHTML = '<div style="color:#888; margin-bottom:10px;">// AI Agent Logs</div>';
+            preview.appendChild(consoleDiv);
+            
+            function log(msg) {
+                const line = document.createElement('div');
+                line.style.marginTop = '4px';
+                line.style.fontSize = '12px';
+                line.style.borderBottom = '1px solid #333';
+                line.style.paddingBottom = '2px';
+                
+                // Add timestamp
+                const time = new Date().toLocaleTimeString();
+                line.innerHTML = `<span style="color:#666">[${time}]</span> ${msg}`;
+                
+                consoleDiv.appendChild(line);
+                consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            }
+
+            try {
+                const endpoint = useClaude ? `${API_BASE}/claude/run` : `${API_BASE}/coder/generate_stream`;
+                const body = useClaude 
+                    ? { prompt, api_base: apiBase || undefined, api_key: apiKey || undefined } 
+                    : { prompt, model, api_base: apiBase || undefined };
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const parts = buffer.split('\n\n');
+                    buffer = parts.pop(); // Keep incomplete part
+                    
+                    for (const part of parts) {
+                        if (part.startsWith('data: ')) {
+                            const jsonStr = part.substring(6);
+                            try {
+                                const event = JSON.parse(jsonStr);
+                                
+                                if (event.type === 'log') {
+                                    log(event.message);
+                                } else if (event.type === 'result') {
+                                    const data = event.data;
+                                    log("✨ Processing complete.");
+                                    
+                                    // Render results below console
+                                    const resultContainer = document.createElement('div');
+                                    resultContainer.id = 'coder-results';
+                                    resultContainer.style.animation = 'fadeIn 0.5s';
+                                    preview.appendChild(resultContainer);
+                                    
+                                    if (data.error) {
+                                        resultContainer.innerHTML = `<div style="color:var(--danger-color); margin-top:20px;">Error: ${data.error}</div>`;
+                                        if (data.raw) resultContainer.innerHTML += `<hr><pre>${data.raw.replace(/</g, '&lt;')}</pre>`;
+                                    } else if (data.patches) {
+                                        currentPatches = data.patches;
+                                        renderPreview(data, resultContainer);
+                                        document.getElementById('btn-apply-patch').style.display = 'block';
+                                        document.getElementById('patch-status').textContent = `${data.patches.length} file(s) to modify.`;
+                                    } else if (data.success) {
+                                        resultContainer.innerHTML = `<div style="color:var(--success-color); margin-top:20px; font-size:16px;">✅ ${data.message}</div>`;
+                                        resultContainer.innerHTML += `<div style="color:var(--text-secondary); margin-top:5px;">Changes have been applied directly to the filesystem.</div>`;
+                                        fetchFiles();
+                                        fetchVersions();
+                                    } else {
+                                         resultContainer.innerHTML = `<div style="color:var(--warning-color)">Unexpected response format.</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                                    }
+                                    
+                                } else if (event.type === 'error') {
+                                    log(`❌ Error: ${event.message}`);
+                                    preview.innerHTML += `<div style="color:var(--danger-color); margin-top:10px;">Stream Error: ${event.message}</div>`;
+                                }
+                            } catch (e) {
+                                console.error("Parse error", e);
+                            }
+                        }
+                    }
+                }
+                
+            } catch (e) {
+                preview.innerHTML += `<div style="color:var(--danger-color)">Network Error: ${e.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = useClaude ? "Run Claude Code" : "Generate Patch";
+            }
+        }
+
+        function renderPreview(data, targetContainer = null) {
+            const container = targetContainer || document.getElementById('coder-preview');
+            if (!targetContainer) container.innerHTML = '';
+            
+            // 1. Thought Section
+            if (data.thought) {
+                const thoughtDiv = document.createElement('div');
+                thoughtDiv.style.marginBottom = '20px';
+                thoughtDiv.style.padding = '15px';
+                thoughtDiv.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                thoughtDiv.style.borderLeft = '4px solid var(--accent-color)';
+                thoughtDiv.style.borderRadius = '4px';
+                thoughtDiv.innerHTML = `<strong style="color:var(--accent-color)">🧠 Thought:</strong><br><div style="margin-top:5px; white-space:pre-wrap;">${data.thought}</div>`;
+                container.appendChild(thoughtDiv);
+            }
+
+            // 2. Plan Section
+            if (data.plan && data.plan.length > 0) {
+                const planDiv = document.createElement('div');
+                planDiv.style.marginBottom = '20px';
+                planDiv.innerHTML = `<strong style="color:var(--success-color)">📋 Plan:</strong><ul style="margin-top:5px; padding-left:20px;">${data.plan.map(step => `<li>${step}</li>`).join('')}</ul>`;
+                container.appendChild(planDiv);
+            }
+
+            // 3. Shell Commands (Scripts)
+            if (data.shell_commands && data.shell_commands.length > 0) {
+                const scriptDiv = document.createElement('div');
+                scriptDiv.style.marginBottom = '20px';
+                scriptDiv.innerHTML = `<strong style="color:var(--warning-color)">💻 Shell Scripts:</strong>
+                    <div style="background:black; color:#0f0; padding:10px; border-radius:5px; margin-top:5px; font-family:monospace;">
+                        ${data.shell_commands.map(cmd => `<div>$ ${cmd}</div>`).join('')}
+                    </div>`;
+                container.appendChild(scriptDiv);
+            }
+
+            // 4. Patches
+            if (data.patches && data.patches.length > 0) {
+                const patchesHeader = document.createElement('h3');
+                patchesHeader.textContent = "Proposed File Changes";
+                patchesHeader.style.fontSize = "16px";
+                patchesHeader.style.marginTop = "20px";
+                patchesHeader.style.borderBottom = "1px solid var(--border-color)";
+                container.appendChild(patchesHeader);
+
+                data.patches.forEach(p => {
+                    const item = document.createElement('div');
+                    item.style.marginBottom = '15px';
+                    item.style.borderBottom = '1px solid var(--border-color)';
+                    item.style.paddingBottom = '10px';
+                    
+                    let color = 'var(--text-primary)';
+                    let icon = '📄';
+                    if (p.action === 'create') { color = 'var(--success-color)'; icon = '✨'; }
+                    if (p.action === 'delete') { color = 'var(--danger-color)'; icon = '🗑️'; }
+                    if (p.action === 'replace') { color = 'var(--warning-color)'; icon = '📝'; }
+                    
+                    const contentPreview = p.content ? p.content.substring(0, 200).replace(/</g, '&lt;') + (p.content.length > 200 ? '...' : '') : '(Deletion)';
+                    
+                    item.innerHTML = `
+                        <div style="font-weight:600; color:${color}; margin-bottom:5px;">${icon} ${p.action.toUpperCase()}: ${p.file}</div>
+                        <div style="font-size:11px; background:rgba(0,0,0,0.3); padding:5px; overflow-x:auto;">${contentPreview}</div>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+        }
+
+        async function applyPatch() {
+            if (!currentPatches) return;
+            
+            if (!confirm("Are you sure you want to apply these changes to the codebase?")) return;
+            
+            const btn = document.getElementById('btn-apply-patch');
+            btn.disabled = true;
+            btn.textContent = "Applying...";
+            
+            try {
+                const response = await fetch(`${API_BASE}/coder/apply`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ patches: currentPatches })
+                });
+                const data = await response.json();
+                
+                let msg = "Patch Applied!\n\n";
+                data.results.forEach(r => {
+                    msg += `${r.status === 'success' ? '✅' : '❌'} ${r.file}: ${r.status}\n`;
+                });
+                alert(msg);
+                
+                document.getElementById('coder-preview').innerHTML = '<p style="text-align:center; margin-top:100px;">Patch Applied Successfully.</p>';
+                document.getElementById('btn-apply-patch').style.display = 'none';
+                currentPatches = null;
+                
+            } catch (e) {
+                alert("Error applying patch: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Apply Patch";
+            }
+        }
+    </script>
+</body>
+</html>

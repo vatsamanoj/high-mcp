@@ -1,0 +1,1433 @@
+{
+  "versions": [
+    {
+      "id": "v_20260210_014538",
+      "timestamp": "2026-02-10T01:45:38.952802",
+      "label": "startup",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_014538.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_014539",
+      "timestamp": "2026-02-10T01:45:39.179053",
+      "label": "pre-load-checkpoint",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_014539.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_015521",
+      "timestamp": "2026-02-10T01:55:21.307744",
+      "label": "startup",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_015521.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_015521",
+      "timestamp": "2026-02-10T01:55:21.559979",
+      "label": "pre-load-checkpoint",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_015521.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_021900",
+      "timestamp": "2026-02-10T02:19:00.194465",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_021900.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_021900",
+      "timestamp": "2026-02-10T02:19:00.305558",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_021900.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_022618",
+      "timestamp": "2026-02-10T02:26:18.735601",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_022618.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_022618",
+      "timestamp": "2026-02-10T02:26:18.857555",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_022618.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_024733",
+      "timestamp": "2026-02-10T02:47:33.866001",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_024733.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_024734",
+      "timestamp": "2026-02-10T02:47:34.147625",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_024734.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_024819",
+      "timestamp": "2026-02-10T02:48:19.135931",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_024819.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_024819",
+      "timestamp": "2026-02-10T02:48:19.319216",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_024819.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_025740",
+      "timestamp": "2026-02-10T02:57:40.116416",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_025740.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_025740",
+      "timestamp": "2026-02-10T02:57:40.339022",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_025740.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_025808",
+      "timestamp": "2026-02-10T02:58:08.460059",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_025808.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_025808",
+      "timestamp": "2026-02-10T02:58:08.662311",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_025808.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_030441",
+      "timestamp": "2026-02-10T03:04:41.105048",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_030441.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_030441",
+      "timestamp": "2026-02-10T03:04:41.304672",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_030441.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_030706",
+      "timestamp": "2026-02-10T03:07:06.150844",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_030706.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_030706",
+      "timestamp": "2026-02-10T03:07:06.439558",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_030706.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_030947",
+      "timestamp": "2026-02-10T03:09:47.397091",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_030947.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_030947",
+      "timestamp": "2026-02-10T03:09:47.611879",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_030947.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_031514",
+      "timestamp": "2026-02-10T03:15:14.794596",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_031514.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_031515",
+      "timestamp": "2026-02-10T03:15:15.012689",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_031515.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_031614",
+      "timestamp": "2026-02-10T03:16:14.434017",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_031614.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_031614",
+      "timestamp": "2026-02-10T03:16:14.645886",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_031614.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_032247",
+      "timestamp": "2026-02-10T03:22:47.904048",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_032247.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_032248",
+      "timestamp": "2026-02-10T03:22:48.166130",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_032248.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_032945",
+      "timestamp": "2026-02-10T03:29:45.765943",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_032945.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_032945",
+      "timestamp": "2026-02-10T03:29:45.990996",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_032945.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_191738",
+      "timestamp": "2026-02-10T19:17:38.734216",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_191738.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_191739",
+      "timestamp": "2026-02-10T19:17:39.215875",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_191739.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_192230",
+      "timestamp": "2026-02-10T19:22:30.462820",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_192230.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_192230",
+      "timestamp": "2026-02-10T19:22:30.688418",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_192230.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_192420",
+      "timestamp": "2026-02-10T19:24:20.144850",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_192420.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_192420",
+      "timestamp": "2026-02-10T19:24:20.462455",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_192420.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_192709",
+      "timestamp": "2026-02-10T19:27:09.159242",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_192709.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_192709",
+      "timestamp": "2026-02-10T19:27:09.571039",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_192709.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_192824",
+      "timestamp": "2026-02-10T19:28:24.360137",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_192824.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_192824",
+      "timestamp": "2026-02-10T19:28:24.676137",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_192824.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_193708",
+      "timestamp": "2026-02-10T19:37:08.615827",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_193708.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_193708",
+      "timestamp": "2026-02-10T19:37:08.843905",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_193708.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_193813",
+      "timestamp": "2026-02-10T19:38:13.642991",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_193813.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_193813",
+      "timestamp": "2026-02-10T19:38:13.848657",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_193813.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_194526",
+      "timestamp": "2026-02-10T19:45:26.031165",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_194526.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_194526",
+      "timestamp": "2026-02-10T19:45:26.273456",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_194526.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_195031",
+      "timestamp": "2026-02-10T19:50:31.175794",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_195031.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_195031",
+      "timestamp": "2026-02-10T19:50:31.447196",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_195031.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_195234",
+      "timestamp": "2026-02-10T19:52:34.963784",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_195234.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_195235",
+      "timestamp": "2026-02-10T19:52:35.183799",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_195235.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201459",
+      "timestamp": "2026-02-10T20:15:02.761956",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201459.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201503",
+      "timestamp": "2026-02-10T20:15:06.831028",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201503.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201510",
+      "timestamp": "2026-02-10T20:15:14.084393",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201510.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201722",
+      "timestamp": "2026-02-10T20:17:25.922408",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201722.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201726",
+      "timestamp": "2026-02-10T20:17:29.275061",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201726.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201733",
+      "timestamp": "2026-02-10T20:17:36.369928",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201733.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201840",
+      "timestamp": "2026-02-10T20:18:43.661190",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201840.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201843",
+      "timestamp": "2026-02-10T20:18:46.866152",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201843.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201850",
+      "timestamp": "2026-02-10T20:18:53.957331",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201850.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_201952",
+      "timestamp": "2026-02-10T20:19:56.925797",
+      "label": "coder-apply:after:9199ef25-d748-40fd-81fd-225ee7be0cf5",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_201952.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202055",
+      "timestamp": "2026-02-10T20:20:58.315807",
+      "label": "coder-apply:after:b5156236-23e4-4473-ab3f-6bfc12a7f277",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202055.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202133",
+      "timestamp": "2026-02-10T20:21:37.460364",
+      "label": "coder-apply:before:5d3565db-bfca-40c0-9bd9-d0eeb94de310",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202133.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202137",
+      "timestamp": "2026-02-10T20:21:41.147611",
+      "label": "coder-apply:after:5d3565db-bfca-40c0-9bd9-d0eeb94de310",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202137.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202211",
+      "timestamp": "2026-02-10T20:22:15.436775",
+      "label": "coder-apply:before:3d0b36c9-3528-44dc-b3e5-4b535c63860b",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202211.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202215",
+      "timestamp": "2026-02-10T20:22:19.260362",
+      "label": "coder-apply:after:3d0b36c9-3528-44dc-b3e5-4b535c63860b",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202215.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202437",
+      "timestamp": "2026-02-10T20:24:40.331401",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202437.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202440",
+      "timestamp": "2026-02-10T20:24:43.587086",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202440.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202447",
+      "timestamp": "2026-02-10T20:24:50.551558",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202447.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202513",
+      "timestamp": "2026-02-10T20:25:16.726884",
+      "label": "coder-apply:before:2f9a3ae6-ec4a-48aa-8443-03bf0ba78531",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202513.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202516",
+      "timestamp": "2026-02-10T20:25:20.581156",
+      "label": "coder-apply:after:2f9a3ae6-ec4a-48aa-8443-03bf0ba78531",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202516.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202618",
+      "timestamp": "2026-02-10T20:26:25.882605",
+      "label": "coder-apply:before:0042b606-f4ee-46b8-a697-c99a9f0cc9ec",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202618.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202625",
+      "timestamp": "2026-02-10T20:26:29.405259",
+      "label": "coder-apply:after:0042b606-f4ee-46b8-a697-c99a9f0cc9ec",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202625.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202757",
+      "timestamp": "2026-02-10T20:28:00.468741",
+      "label": "coder-apply:before:74cf8f26-14e3-4772-b9c6-15216969f27a",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202757.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202800",
+      "timestamp": "2026-02-10T20:28:04.127472",
+      "label": "coder-apply:after:74cf8f26-14e3-4772-b9c6-15216969f27a",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202800.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202859",
+      "timestamp": "2026-02-10T20:29:02.899714",
+      "label": "coder-apply:before:06b3a651-922a-46f4-b1fa-96025cf46f1e",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202859.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_202902",
+      "timestamp": "2026-02-10T20:29:06.585533",
+      "label": "coder-apply:after:06b3a651-922a-46f4-b1fa-96025cf46f1e",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_202902.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_203410_553856",
+      "timestamp": "2026-02-10T20:34:15.822807",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_203410_553856.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_203416_053664",
+      "timestamp": "2026-02-10T20:34:19.311139",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_203416_053664.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_203423_239182",
+      "timestamp": "2026-02-10T20:34:26.526059",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_203423_239182.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_203458_250904",
+      "timestamp": "2026-02-10T20:35:01.453773",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_203458_250904.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_203501_670923",
+      "timestamp": "2026-02-10T20:35:04.908338",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_203501_670923.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_203508_999518",
+      "timestamp": "2026-02-10T20:35:12.238553",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_203508_999518.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_203554_652731",
+      "timestamp": "2026-02-10T20:35:57.849019",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_203554_652731.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_203558_062462",
+      "timestamp": "2026-02-10T20:36:01.208666",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_203558_062462.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_203605_142904",
+      "timestamp": "2026-02-10T20:36:08.297410",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_203605_142904.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_204504_812787",
+      "timestamp": "2026-02-10T20:45:12.701274",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_204504_812787.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_204513_442239",
+      "timestamp": "2026-02-10T20:45:36.538103",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_204513_442239.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_204542_563943",
+      "timestamp": "2026-02-10T20:45:51.326210",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_204542_563943.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_204552_098097",
+      "timestamp": "2026-02-10T20:46:05.912617",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_204552_098097.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_204615_193667",
+      "timestamp": "2026-02-10T20:46:23.939211",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_204615_193667.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_204710_552152",
+      "timestamp": "2026-02-10T20:47:18.046398",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_204710_552152.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_204814_457563",
+      "timestamp": "2026-02-10T20:48:22.034040",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_204814_457563.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_205957_658998",
+      "timestamp": "2026-02-10T21:00:05.915318",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_205957_658998.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_210736_003909",
+      "timestamp": "2026-02-10T21:07:42.195774",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_210736_003909.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_210742_666373",
+      "timestamp": "2026-02-10T21:07:48.640064",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_210742_666373.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_210755_398738",
+      "timestamp": "2026-02-10T21:08:01.532289",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_210755_398738.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_210817_426083",
+      "timestamp": "2026-02-10T21:08:23.298989",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_210817_426083.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_210823_860738",
+      "timestamp": "2026-02-10T21:08:30.024888",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_210823_860738.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_210835_964844",
+      "timestamp": "2026-02-10T21:08:42.823461",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_210835_964844.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_211040_999796",
+      "timestamp": "2026-02-10T21:10:47.729948",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_211040_999796.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_212303_040397",
+      "timestamp": "2026-02-10T21:23:09.598709",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_212303_040397.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_212601_067828",
+      "timestamp": "2026-02-10T21:26:08.080241",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_212601_067828.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_213603_786183",
+      "timestamp": "2026-02-10T21:36:08.741946",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_213603_786183.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_214251_850269",
+      "timestamp": "2026-02-10T21:42:55.122298",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_214251_850269.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_214320_797187",
+      "timestamp": "2026-02-10T21:43:23.860288",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_214320_797187.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_214631_170250",
+      "timestamp": "2026-02-10T21:46:34.284993",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_214631_170250.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_215146_058982",
+      "timestamp": "2026-02-10T21:51:49.243854",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_215146_058982.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_215622_434711",
+      "timestamp": "2026-02-10T21:56:25.385325",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_215622_434711.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_215811_103379",
+      "timestamp": "2026-02-10T21:58:14.181786",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_215811_103379.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_215922_276364",
+      "timestamp": "2026-02-10T21:59:25.442797",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_215922_276364.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_220033_230220",
+      "timestamp": "2026-02-10T22:00:36.387103",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_220033_230220.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_220109_568871",
+      "timestamp": "2026-02-10T22:01:12.791134",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_220109_568871.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_220253_692592",
+      "timestamp": "2026-02-10T22:02:57.241363",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_220253_692592.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_220509_390293",
+      "timestamp": "2026-02-10T22:05:12.383700",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_220509_390293.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_220541_719505",
+      "timestamp": "2026-02-10T22:05:44.734192",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_220541_719505.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_220743_551277",
+      "timestamp": "2026-02-10T22:07:46.632613",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_220743_551277.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_220952_249165",
+      "timestamp": "2026-02-10T22:09:55.362894",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_220952_249165.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_221107_872917",
+      "timestamp": "2026-02-10T22:11:11.005254",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_221107_872917.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_222028_740822",
+      "timestamp": "2026-02-10T22:20:32.054863",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_222028_740822.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_222032_059003",
+      "timestamp": "2026-02-10T22:20:35.256913",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_222032_059003.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_222352_220958",
+      "timestamp": "2026-02-10T22:23:55.364883",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_222352_220958.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_222355_368117",
+      "timestamp": "2026-02-10T22:23:58.604815",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_222355_368117.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_222537_677899",
+      "timestamp": "2026-02-10T22:25:40.879210",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_222537_677899.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_222540_883361",
+      "timestamp": "2026-02-10T22:25:44.074485",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_222540_883361.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_223005_269679",
+      "timestamp": "2026-02-10T22:30:08.332174",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_223005_269679.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_223008_336472",
+      "timestamp": "2026-02-10T22:30:11.566650",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_223008_336472.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_223522_647984",
+      "timestamp": "2026-02-10T22:35:25.638107",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_223522_647984.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_223525_643248",
+      "timestamp": "2026-02-10T22:35:28.766808",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_223525_643248.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_224608_776393",
+      "timestamp": "2026-02-10T22:46:11.825802",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_224608_776393.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_224611_830345",
+      "timestamp": "2026-02-10T22:46:15.461748",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_224611_830345.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_224826_612640",
+      "timestamp": "2026-02-10T22:48:29.550274",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_224826_612640.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_224829_552998",
+      "timestamp": "2026-02-10T22:48:32.710530",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_224829_552998.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_224906_196995",
+      "timestamp": "2026-02-10T22:49:09.252969",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_224906_196995.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_224909_256345",
+      "timestamp": "2026-02-10T22:49:12.486236",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_224909_256345.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_224938_367593",
+      "timestamp": "2026-02-10T22:49:41.430029",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_224938_367593.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_224941_434161",
+      "timestamp": "2026-02-10T22:49:44.545103",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_224941_434161.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225235_015263",
+      "timestamp": "2026-02-10T22:52:38.157794",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225235_015263.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225238_364535",
+      "timestamp": "2026-02-10T22:52:41.409182",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225238_364535.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225243_254913",
+      "timestamp": "2026-02-10T22:52:46.215895",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225243_254913.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225246_219992",
+      "timestamp": "2026-02-10T22:52:49.331168",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225246_219992.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225320_178788",
+      "timestamp": "2026-02-10T22:53:23.159492",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225320_178788.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225323_378597",
+      "timestamp": "2026-02-10T22:53:26.482352",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225323_378597.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225328_230196",
+      "timestamp": "2026-02-10T22:53:31.239883",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225328_230196.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225331_244659",
+      "timestamp": "2026-02-10T22:53:34.545044",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225331_244659.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225559_031485",
+      "timestamp": "2026-02-10T22:56:02.146932",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225559_031485.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225602_327874",
+      "timestamp": "2026-02-10T22:56:05.315189",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225602_327874.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225607_021649",
+      "timestamp": "2026-02-10T22:56:10.004852",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225607_021649.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225610_008940",
+      "timestamp": "2026-02-10T22:56:13.284080",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225610_008940.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225807_003965",
+      "timestamp": "2026-02-10T22:58:09.939685",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225807_003965.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225810_132131",
+      "timestamp": "2026-02-10T22:58:13.262239",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225810_132131.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225815_188314",
+      "timestamp": "2026-02-10T22:58:18.346967",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225815_188314.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_225818_352226",
+      "timestamp": "2026-02-10T22:58:21.701213",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_225818_352226.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_230434_989921",
+      "timestamp": "2026-02-10T23:04:37.960737",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_230434_989921.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_230438_141465",
+      "timestamp": "2026-02-10T23:04:41.119510",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_230438_141465.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_230442_642385",
+      "timestamp": "2026-02-10T23:04:45.618459",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_230442_642385.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_230445_624665",
+      "timestamp": "2026-02-10T23:04:48.791399",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_230445_624665.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_230808_169506",
+      "timestamp": "2026-02-10T23:08:11.135631",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_230808_169506.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_230811_356030",
+      "timestamp": "2026-02-10T23:08:14.393098",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_230811_356030.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_230815_850085",
+      "timestamp": "2026-02-10T23:08:18.878501",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_230815_850085.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260210_230818_881788",
+      "timestamp": "2026-02-10T23:08:22.046634",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260210_230818_881788.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_102844_909717",
+      "timestamp": "2026-02-11T10:28:49.503957",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_102844_909717.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_102849_793765",
+      "timestamp": "2026-02-11T10:28:55.608132",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_102849_793765.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_102858_369999",
+      "timestamp": "2026-02-11T10:29:08.028578",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_102858_369999.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_102917_931959",
+      "timestamp": "2026-02-11T10:29:25.610383",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_102917_931959.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_102926_615956",
+      "timestamp": "2026-02-11T10:29:40.586771",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_102926_615956.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_102943_497315",
+      "timestamp": "2026-02-11T10:29:51.783064",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_102943_497315.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_102951_794381",
+      "timestamp": "2026-02-11T10:30:02.900029",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_102951_794381.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_104133_510692",
+      "timestamp": "2026-02-11T10:41:39.358047",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_104133_510692.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_104139_366224",
+      "timestamp": "2026-02-11T10:41:44.612248",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_104139_366224.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_104729_958818",
+      "timestamp": "2026-02-11T10:47:36.450591",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_104729_958818.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_104736_458136",
+      "timestamp": "2026-02-11T10:47:42.571071",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_104736_458136.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_105413_572304",
+      "timestamp": "2026-02-11T10:54:19.169442",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_105413_572304.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_105419_181331",
+      "timestamp": "2026-02-11T10:54:25.419043",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_105419_181331.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_114825_036809",
+      "timestamp": "2026-02-11T11:48:31.145852",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_114825_036809.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_114831_153584",
+      "timestamp": "2026-02-11T11:48:36.966597",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_114831_153584.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_115536_752608",
+      "timestamp": "2026-02-11T11:55:40.192151",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_115536_752608.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_115540_196932",
+      "timestamp": "2026-02-11T11:55:43.350330",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_115540_196932.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_121336_825114",
+      "timestamp": "2026-02-11T12:13:40.038278",
+      "label": "ui_startup",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_121336_825114.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_121340_044324",
+      "timestamp": "2026-02-11T12:13:43.232698",
+      "label": "pre-load-checkpoint",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_121340_044324.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_121725_017119",
+      "timestamp": "2026-02-11T12:17:28.073799",
+      "label": "ui_startup",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_121725_017119.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_121728_079221",
+      "timestamp": "2026-02-11T12:17:31.188188",
+      "label": "pre-load-checkpoint",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_121728_079221.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_122714_286114",
+      "timestamp": "2026-02-11T12:27:17.391517",
+      "label": "ui_startup",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_122714_286114.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_122717_395881",
+      "timestamp": "2026-02-11T12:27:20.587928",
+      "label": "pre-load-checkpoint",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_122717_395881.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_123339_100913",
+      "timestamp": "2026-02-11T12:33:42.116408",
+      "label": "ui_startup",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_123339_100913.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_123342_121109",
+      "timestamp": "2026-02-11T12:33:45.350243",
+      "label": "pre-load-checkpoint",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_123342_121109.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_124202_021621",
+      "timestamp": "2026-02-11T12:42:14.263704",
+      "label": "ui_startup",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_124202_021621.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_124214_313815",
+      "timestamp": "2026-02-11T12:42:25.662988",
+      "label": "pre-load-checkpoint",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_124214_313815.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_124903_339760",
+      "timestamp": "2026-02-11T12:49:06.674324",
+      "label": "ui_startup",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_124903_339760.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_124906_680598",
+      "timestamp": "2026-02-11T12:49:10.049388",
+      "label": "pre-load-checkpoint",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_124906_680598.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_124947_425458",
+      "timestamp": "2026-02-11T12:49:50.536206",
+      "label": "ui_startup",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_124947_425458.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_124950_541676",
+      "timestamp": "2026-02-11T12:49:53.688593",
+      "label": "pre-load-checkpoint",
+      "path": "c:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_124950_541676.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_130914_934175",
+      "timestamp": "2026-02-11T13:09:20.174795",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_130914_934175.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_130920_594558",
+      "timestamp": "2026-02-11T13:09:26.093830",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_130920_594558.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_130929_829153",
+      "timestamp": "2026-02-11T13:09:36.677284",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_130929_829153.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_130936_691247",
+      "timestamp": "2026-02-11T13:09:42.467839",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_130936_691247.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_130950_638107",
+      "timestamp": "2026-02-11T13:09:56.379400",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_130950_638107.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_130956_461271",
+      "timestamp": "2026-02-11T13:10:02.104193",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_130956_461271.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_131127_234755",
+      "timestamp": "2026-02-11T13:11:32.269303",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_131127_234755.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_131132_674138",
+      "timestamp": "2026-02-11T13:11:38.375651",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_131132_674138.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_131142_004896",
+      "timestamp": "2026-02-11T13:11:47.764955",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_131142_004896.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_131147_778342",
+      "timestamp": "2026-02-11T13:11:53.273815",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_131147_778342.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_131202_733740",
+      "timestamp": "2026-02-11T13:12:08.655137",
+      "label": "ui_startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_131202_733740.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_131208_716723",
+      "timestamp": "2026-02-11T13:12:14.969635",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_131208_716723.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260211_132149_185342",
+      "timestamp": "2026-02-11T13:21:56.217713",
+      "label": "pre-load-checkpoint",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_132149_185342.zip",
+      "status": "healthy"
+    }
+  ],
+  "current_version": "v_20260211_132149_185342"
+}

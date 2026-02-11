@@ -1,0 +1,9 @@
+{
+  "ntfy": {
+    "enabled": true,
+    "topic": "high_mcp_alerts_9355544034",
+    "priority": "high",
+    "server": "https://ntfy.sh"
+  },
+  "user_mobile": "+919355544034"
+}

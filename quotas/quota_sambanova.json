@@ -1,0 +1,48 @@
+{
+  "api_endpoint": "https://api.sambanova.ai/v1",
+  "api_key": "0d20a3a7-096c-4f09-b92c-0d777ec02edb",
+  "provider": "openai",
+  "models": [
+    {
+      "model": "Meta-Llama-3.1-8B-Instruct",
+      "rpm": {
+        "limit": 30
+      },
+      "rpd": {
+        "limit": 1000000
+      },
+      "category": "fast",
+      "tier": "economical"
+    },
+    {
+      "model": "Meta-Llama-3.1-70B-Instruct",
+      "rpm": {
+        "limit": 30
+      },
+      "rpd": {
+        "limit": 1000000
+      },
+      "category": "smart"
+    },
+    {
+      "model": "Meta-Llama-3.1-405B-Instruct",
+      "rpm": {
+        "limit": 30
+      },
+      "rpd": {
+        "limit": 1000000
+      },
+      "category": "smart"
+    },
+    {
+      "model": "Qwen2.5-72B-Instruct",
+      "rpm": {
+        "limit": 30
+      },
+      "rpd": {
+        "limit": 1000000
+      },
+      "category": "smart"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "api_endpoint": "https://generativelanguage.googleapis.com/v1beta",
+  "api_key": "AIzaSyFakeKeyForTestingBlockingSystem12345",
+  "provider": "google",
+  "models": [
+    {
+      "model": "gemini-fake-block",
+      "rpm": {
+        "limit": 10
+      },
+      "category": "fast"
+    }
+  ]
+}

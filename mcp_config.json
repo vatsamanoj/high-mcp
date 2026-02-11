@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "superpowers": {
+      "command": "python",
+      "args": ["c:/Users/HP/Documents/high-mcp/claude_plugin.py"],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}
