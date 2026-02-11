@@ -122,3 +122,17 @@ class TrustSystem:
         if not self.manifest["versions"]:
             return None
         return self.manifest["versions"][-1]["id"]
+
+    @property
+    def current_version(self) -> Optional[str]:
+        """Returns the currently active snapshot version id."""
+        return self.manifest.get("current_version")
+
+    def list_snapshots(self) -> List[Dict]:
+        """Returns snapshot metadata in reverse-chronological order."""
+        versions = list(self.manifest.get("versions", []))
+        return sorted(versions, key=lambda v: v.get("timestamp", ""), reverse=True)
+
+    def restore_snapshot(self, version_id: str) -> bool:
+        """Compatibility wrapper used by UI layer."""
+        return self.rollback(version_id)

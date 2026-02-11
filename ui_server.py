@@ -4,10 +4,12 @@ import asyncio
 import traceback
 import json
 import logging
+import shutil
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, HTTPException, Request, Body
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 import httpx
 from pydantic import BaseModel
 
@@ -26,7 +28,7 @@ from dependencies import (
     get_trust_system,
     patch_action
 )
-from fastapi import Depends
+from fastapi import Depends, UploadFile, File
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO)
@@ -34,6 +36,11 @@ logger = logging.getLogger("ui_server")
 
 # Initialize App
 app = FastAPI(title="High-MCP UI Node")
+app.mount(
+    "/dashboard_plugins",
+    StaticFiles(directory=os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_plugins")),
+    name="dashboard_plugins",
+)
 
 # CORS
 app.add_middleware(
@@ -270,26 +277,44 @@ async def list_quotas():
     return {"files": files}
 
 @app.delete("/api/quotas/{filename}")
-async def delete_quota(filename: str):
+async def delete_quota(filename: str, qm = Depends(get_quota_manager)):
     if ".." in filename or "/" in filename or "\\" in filename:
         raise HTTPException(400, "Invalid filename")
     
     path = os.path.join(BASE_DIR, "quotas", filename)
     if os.path.exists(path):
         os.remove(path)
-        # Trigger reload if needed?
         qm._sync_configuration_from_json()
         return {"success": True}
     raise HTTPException(404, "File not found")
 
 @app.post("/api/quotas/upload")
-async def upload_quota(file: Any = Body(...)):
-    # Handling file upload in FastAPI usually requires UploadFile
-    # But for simplicity, we'll assume the client sends multipart/form-data handled by FastAPI
-    # This might need 'python-multipart' installed.
-    # Given the dashboard code: body: formData
-    pass 
-    # For now, skipping upload implementation detail to focus on fix.
+async def upload_quota(file: UploadFile = File(...), qm = Depends(get_quota_manager)):
+    if not file.filename:
+        raise HTTPException(400, "Missing filename")
+
+    filename = os.path.basename(file.filename)
+    if not filename.endswith(".json"):
+        raise HTTPException(400, "Only .json quota files are supported")
+
+    target_path = os.path.join(BASE_DIR, "quotas", filename)
+    try:
+        with open(target_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+        with open(target_path, "r", encoding="utf-8") as f:
+            json.load(f)
+
+        qm._sync_configuration_from_json()
+    except json.JSONDecodeError:
+        if os.path.exists(target_path):
+            os.remove(target_path)
+        raise HTTPException(400, "Invalid JSON payload")
+    except Exception as e:
+        raise HTTPException(500, f"Upload failed: {str(e)}")
+    finally:
+        await file.close()
+
     return {"success": True}
 
 @app.get("/")
