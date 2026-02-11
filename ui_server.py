@@ -12,6 +12,12 @@ from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import httpx
 from pydantic import BaseModel
+from claude_runner import (
+    resolve_claude_cli_command,
+    build_claude_environment,
+    PLUGIN_MODE_SYSTEM_INSTRUCTION,
+)
+from chat_prompt_optimizer import build_compact_chat_prompt
 
 # Import core modules
 from redis_quota_manager import RedisQuotaManager
@@ -122,6 +128,7 @@ class Patch(BaseModel):
     
 class ApplyPatchesRequest(BaseModel):
     patches: List[Patch]
+
 
 # --- Endpoints ---
 
@@ -409,35 +416,10 @@ async def proxy_anthropic_messages(request: Request):
                 if function_declarations:
                     gemini_tools.append({"function_declarations": function_declarations})
 
-            # --- Message Construction ---
-            full_prompt = ""
-            if system:
-                full_prompt += f"System: {system}\n\n"
-            
-            # Add strong tool use instruction
-            full_prompt += "IMPORTANT: You are an agent that MUST use the provided tools to answer questions. If the user asks to list files, use the Glob tool. If the user asks for weather, use the get_weather tool. Do not just describe what you would do.\n\n"
-            
-            for msg in messages:
-                role = msg.get("role")
-                content = msg.get("content")
-                
-                # Handle content list (Anthropic format)
-                if isinstance(content, list):
-                    text_content = ""
-                    for block in content:
-                        if block.get("type") == "text":
-                            text_content += block.get("text", "")
-                        elif block.get("type") == "tool_result":
-                            # Handle incoming tool results from Claude Code
-                            # Format: Tool Result [ID]: ...
-                            text_content += f"\n[Tool Result for {block.get('tool_use_id')}]: {block.get('content')}\n"
-                            
-                    content = text_content
-                
-                full_prompt += f"{role.capitalize()}: {content}\n"
-            
-            full_prompt += "\nAssistant:"
-            
+            # --- Message Construction (token-efficient) ---
+            prompt_budget_chars = int(os.environ.get("CHAT_PROMPT_MAX_CHARS", "12000"))
+            full_prompt = build_compact_chat_prompt(system, messages, max_chars=prompt_budget_chars)
+
             # 3. Construct Gemini Request
             # Default to a model that supports tools well
             target_model = "gemini-1.5-pro"
@@ -592,35 +574,24 @@ async def run_claude(req: CoderGenerateRequest):
     Executes Claude Code CLI with the given prompt and streams the output.
     Uses 'npx -y @anthropic-ai/claude-code' to ensure availability.
     """
+    prompt_preview = (req.prompt or "")[:80]
     with open("debug_log.txt", "a") as f:
-        f.write(f"DEBUG: Entering run_claude with prompt: {req.prompt[:20]}...\n")
-    print(f"DEBUG: Entering run_claude with prompt: {req.prompt[:20]}...")
-    logger.info(f"Received Claude Run Request: prompt='{req.prompt[:20]}...', api_base={req.api_base}")
+        f.write(f"DEBUG: Entering run_claude with prompt: {prompt_preview}\n")
+    logger.info(f"Received Claude Run Request: prompt='{prompt_preview}', api_base={req.api_base}")
+
+    if not req.prompt or not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt must not be empty")
     
     async def event_generator():
         queue = asyncio.Queue()
         
         async def run_process():
-            print("DEBUG: run_process started")
             try:
                 logger.info("Starting Claude Process...")
-                # Construct command: npx -y @anthropic-ai/claude-code "prompt" --non-interactive (if supported)
-                # Note: --dangerously-skip-permissions is required for true headless automation often
-                # Inject Runtime Plugin Instructions
-                system_instruction = (
-                    "CRITICAL: You are operating in Runtime Plugin Mode. "
-                    "Do NOT edit existing files in the project root or 'components/' directly. "
-                    "Instead, implement your changes by creating a NEW Python file in the 'plugins/' directory. "
-                    "If fixing 'components/foo.py', create 'plugins/foo.py' with the complete corrected code to override it at runtime. "
-                    "If adding a new feature, create 'plugins/new_feature.py'. "
-                    "Ensure your plugin follows the standard component structure (def setup(app, mcp): ...)."
-                )
-                full_prompt = f"{system_instruction}\n\nTask: {req.prompt}"
+                # Construct command in plugin mode and run non-interactively.
+                full_prompt = f"{PLUGIN_MODE_SYSTEM_INSTRUCTION}\n\nTask: {req.prompt.strip()}"
 
-                cmd = [
-                    "npx.cmd" if os.name == 'nt' else "npx", 
-                    "-y", 
-                    "@anthropic-ai/claude-code", 
+                cmd = resolve_claude_cli_command() + [
                     "--mcp-config",
                     os.path.join(BASE_DIR, "mcp_config.json"),
                     "--print", # Force non-interactive output
@@ -632,42 +603,7 @@ async def run_claude(req: CoderGenerateRequest):
                     f.write(f"DEBUG: Command: {' '.join(cmd)}\n")
                 
                 # Prepare Environment
-                env = os.environ.copy()
-                
-                # Debug logging
-                print(f"DEBUG: API Key present? {bool(req.api_key)}")
-                print(f"DEBUG: Request API Base: '{req.api_base}'")
-
-                # Inject API Key from Env or Request (Priority: Request -> Env HIGH_MCP_KEY -> Env ANTHROPIC_API_KEY)
-                # This allows bypassing interactive login if key is provided
-                if req.api_key:
-                    env["ANTHROPIC_API_KEY"] = req.api_key
-                    # ALSO set in process environment so the Proxy endpoint can see it
-                    os.environ["ANTHROPIC_API_KEY"] = req.api_key
-                elif "HIGH_MCP_KEY" in env and "ANTHROPIC_API_KEY" not in env:
-                    env["ANTHROPIC_API_KEY"] = env["HIGH_MCP_KEY"]
-                
-                # If user wants to proxy, they can set ANTHROPIC_BASE_URL in env
-                # or we could support passing it in request.
-                if req.api_base and req.api_base.strip():
-                    env["ANTHROPIC_BASE_URL"] = req.api_base.strip()
-                    env["CLAUDE_BASE_URL"] = req.api_base.strip() # Force CLAUDE_BASE_URL as well
-                else:
-                    # Default to Local Proxy to ensure key injection works
-                    # This solves the "Invalid API Key" issue by routing through our authenticated proxy
-                    local_url = "http://127.0.0.1:8004"
-                    env["ANTHROPIC_BASE_URL"] = local_url
-                    env["CLAUDE_BASE_URL"] = local_url
-                    print(f"DEBUG: Defaulting to Local Proxy: {local_url}")
-                
-                # Ensure we pass a key to satisfy SDK validation
-                # If we don't have a real key in env, pass a dummy format-compliant key
-                # The proxy will replace it if it has a real key.
-                if "ANTHROPIC_API_KEY" not in env:
-                     print("DEBUG: Injecting Dummy Key for Proxy Authentication")
-                     env["ANTHROPIC_API_KEY"] = "sk-ant-api03-dummy-key-for-proxy-authentication-1234567890"
-
-                print(f"DEBUG: Final Env Base URL: '{env.get('ANTHROPIC_BASE_URL', 'Not Set')}'")
+                env = build_claude_environment(req.api_key, req.api_base)
 
                 
                 # Add --api-base-url flag if supported or try to pass it via env
@@ -696,8 +632,10 @@ async def run_claude(req: CoderGenerateRequest):
                         decoded_line = line.decode('utf-8', errors='replace').strip()
                         if decoded_line:
                             msg_type = "log" if stream_name == "stdout" else "error"
-                            # If stderr looks like a log, treat as log
-                            if stream_name == "stderr" and not ("Error" in decoded_line or "Exception" in decoded_line):
+                            # If stderr looks like a warning/informational log, treat as log
+                            if stream_name == "stderr" and not any(
+                                token in decoded_line.lower() for token in ["error", "exception", "failed", "traceback"]
+                            ):
                                 msg_type = "log"
                                 decoded_line = f"[STDERR] {decoded_line}"
                             
@@ -708,16 +646,28 @@ async def run_claude(req: CoderGenerateRequest):
                     read_stream(process.stderr, "stderr")
                 )
                 
-                await process.wait()
+                timeout_s = int(os.environ.get("CLAUDE_RUN_TIMEOUT_SECONDS", "300"))
+                try:
+                    await asyncio.wait_for(process.wait(), timeout=timeout_s)
+                except asyncio.TimeoutError:
+                    process.kill()
+                    await process.wait()
+                    await queue.put({
+                        "type": "error",
+                        "message": f"Claude Code timed out after {timeout_s}s"
+                    })
+                    return
+
                 if process.returncode != 0:
-                    stderr = await process.stderr.read()
-                    err_msg = stderr.decode('utf-8', errors='replace')
-                    await queue.put({"type": "error", "message": f"Claude Code exited with code {process.returncode}\n{err_msg}"})
+                    await queue.put({"type": "error", "message": f"Claude Code exited with code {process.returncode}"})
                     with open("debug_log.txt", "a") as f:
-                        f.write(f"ERROR: Claude Code exited with code {process.returncode}\n{err_msg}\n")
+                        f.write(f"ERROR: Claude Code exited with code {process.returncode}\n")
                 else:
                     await queue.put({"type": "result", "data": "Processing complete."})
                     
+            except RuntimeError as e:
+                logger.error(f"Run setup error: {e}")
+                await queue.put({"type": "error", "message": str(e)})
             except Exception as e:
                 logger.error(f"Run Error: {e}")
                 with open("debug_log.txt", "a") as f:

@@ -4,7 +4,7 @@ import time
 import os
 import sys
 import asyncio
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List, Set
 from notification_system import NotificationSystem
 from request_repository import RequestRepository
 
@@ -361,7 +361,7 @@ class AIEngine:
         # so we'll just log before/after or refactor _get_project_context to be async later. 
         # For now, let's keep it simple and just log the major steps we control here.
         
-        context = await asyncio.to_thread(self._get_project_context)
+        context = await asyncio.to_thread(self._get_project_context, prompt)
         
         if progress_callback:
             msg = f"✅ Context loaded ({len(context)} chars). Constructing prompt..."
@@ -393,10 +393,10 @@ class AIEngine:
             "but 'replace' (full content) is preferred for safety if file is < 500 lines.\n"
             "\n"
             "## Architecture Guidelines\n"
-            "- **Components/Plugins**: This project uses a Unified Component Architecture. Both `server.py` (MCP) and `ui_server.py` (FastAPI) load components from the `components/` directory.\n"
-            "- **Component Structure**: Create new features as standalone Python modules in `components/`. Each component MUST define a `setup(mcp=None, app=None)` function.\n"
+            "- **Components/Plugins**: This project uses a Unified Component Architecture. Both `server.py` (MCP) and `ui_server.py` (FastAPI) are plugin-first and load overrides from the `plugins/` directory.\n"
+            "- **Component Structure**: Create new features as standalone Python modules in `plugins/`. Each plugin MUST define a `setup(mcp=None, app=None)` function.\n"
             "- **Injection**: Use `if mcp: @mcp.tool()` to register tools, and `if app: @app.get(...)` to register routes.\n"
-            "- **Hot Reload**: Components are hot-reloadable. Do not modify core server files unless necessary; prefer creating new components.\n"
+            "- **Hot Reload**: Components/plugins are hot-reloadable. Do not modify core server files unless necessary; prefer creating new plugins.\n"
             "\n"
             "Project Context:\n"
         )
@@ -451,62 +451,127 @@ class AIEngine:
             print(f"❌ Unexpected error parsing JSON: {e}")
             return {"error": f"An unexpected error occurred during JSON parsing: {e}", "raw_response": response_text}
 
-    MAX_CONTEXT_CHARS = 20000
+    MAX_CONTEXT_CHARS = 28000
 
-    def _get_project_context(self) -> str:
-        context = []
+    def _extract_prompt_terms(self, prompt: str) -> Set[str]:
+        raw = (prompt or "").lower()
+        tokens = []
+        current = []
+        for ch in raw:
+            if ch.isalnum() or ch in {'_', '-', '/'}:
+                current.append(ch)
+            else:
+                if current:
+                    tokens.append(''.join(current))
+                    current = []
+        if current:
+            tokens.append(''.join(current))
+
+        stop = {
+            "the", "and", "for", "with", "that", "this", "from", "into", "your", "you",
+            "are", "was", "were", "have", "has", "had", "not", "but", "can", "will", "all",
+            "any", "new", "fix", "make", "add", "use", "via", "run", "test", "code", "file",
+        }
+        return {t for t in tokens if len(t) > 2 and t not in stop}
+
+    def _context_priority_files(self) -> List[str]:
+        return [
+            "server.py",
+            "ui_server.py",
+            "ai_engine.py",
+            "component_manager.py",
+            "claude_runner.py",
+            "chat_prompt_optimizer.py",
+            "components/superpowers.py",
+            "components/core_ai.py",
+            "plugins/claude_superpowers_demo.py",
+            "README.md",
+            "README_MCP.md",
+        ]
+
+    def _score_context_file(self, rel_path: str, prompt_terms: Set[str]) -> int:
+        rel = rel_path.replace('\\', '/').lower()
+        name = rel.split('/')[-1]
+        score = 0
+
+        if rel.startswith('plugins/'):
+            score += 40
+        elif rel.startswith('components/'):
+            score += 25
+
+        if name in {"server.py", "ui_server.py", "component_manager.py", "ai_engine.py"}:
+            score += 35
+
+        if "superpower" in rel:
+            score += 20
+        if "claude" in rel:
+            score += 15
+
+        for t in prompt_terms:
+            if t in rel:
+                score += 8
+
+        return score
+
+    def _get_project_context(self, prompt: str = "") -> str:
+        context: List[str] = []
         allowed_ext = {'.py', '.html', '.js', '.css', '.json', '.md'}
-        ignored_dirs = {'.git', '__pycache__', 'node_modules', 'venv', 'env', '.idea', '.vscode', 'quotas', 'requests.db', 'key_harvester', 'trust_store'}
-        
-        # 1. Build File Tree first (so model knows everything that exists)
+        ignored_dirs = {
+            '.git', '__pycache__', 'node_modules', 'venv', 'env', '.idea', '.vscode',
+            'quotas', 'key_harvester', 'trust_store', '.pytest_cache', '.mypy_cache'
+        }
+
+        prompt_terms = self._extract_prompt_terms(prompt)
+
         file_tree = ["Project Structure:"]
-        all_files_map = [] # (rel_path, full_path, size)
-        
+        all_files_map: List[Tuple[str, str, int, int]] = []  # rel_path, full_path, size, score
+
         for root, dirs, files in os.walk(self.base_dir):
             dirs[:] = [d for d in dirs if d not in ignored_dirs]
             level = root.replace(self.base_dir, '').count(os.sep)
             indent = '  ' * level
             file_tree.append(f"{indent}{os.path.basename(root)}/")
-            
+
             for file in files:
                 ext = os.path.splitext(file)[1].lower()
-                if ext not in allowed_ext: continue
-                
+                if ext not in allowed_ext:
+                    continue
+
                 path = os.path.join(root, file)
                 rel_path = os.path.relpath(path, self.base_dir)
-                size = os.path.getsize(path)
-                
+                try:
+                    size = os.path.getsize(path)
+                except OSError:
+                    continue
+
                 file_tree.append(f"{indent}  {file}")
-                all_files_map.append((rel_path, path, size))
-                
+                score = self._score_context_file(rel_path, prompt_terms)
+                all_files_map.append((rel_path, path, size, score))
+
         context.append("\n".join(file_tree))
         context.append("\n\nFile Contents:")
-        
-        # 2. Add Content (Priority First)
+
         total_chars = len(context[0])
-        priority_files = ['ui_server.py', 'quota_server.py', 'ai_engine.py', 'dashboard.html']
-        
-        # Helper to add file
-        def add_file(rel_path, path, size, is_priority=False):
+
+        def add_file(rel_path: str, path: str, size: int, is_priority: bool = False) -> bool:
             nonlocal total_chars
-            if total_chars > self.MAX_CONTEXT_CHARS: 
+            if total_chars > self.MAX_CONTEXT_CHARS:
                 return False
-                
+
             try:
-                # If file is too big, truncate it
-                limit = 30000 if is_priority else 10000
-                if size > limit:
-                     with open(path, 'r', encoding='utf-8') as f:
-                        content = f.read(limit)
-                        chunk = f"\nFile: {rel_path} (First {limit} chars)\n```\n{content}\n...\n```\n"
-                else:
-                    with open(path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                        chunk = f"\nFile: {rel_path}\n```\n{content}\n```\n"
-                
+                line_limit = 800 if is_priority else 400
+                char_limit = 36000 if is_priority else 8000
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read(char_limit)
+
+                lines = content.splitlines()
+                if len(lines) > line_limit:
+                    content = "\n".join(lines[:line_limit]) + "\n... (truncated)"
+
+                chunk = f"\nFile: {rel_path}\n```\n{content}\n```\n"
                 if total_chars + len(chunk) > self.MAX_CONTEXT_CHARS:
                     return False
-                
+
                 context.append(chunk)
                 total_chars += len(chunk)
                 return True
@@ -514,21 +579,25 @@ class AIEngine:
                 context.append(f"\nFile: {rel_path} (Error reading: {e})\n")
                 return True
 
-        # Add Priority Files
-        processed_files = set()
-        for p_file in priority_files:
-            # Find in map
-            found = next((x for x in all_files_map if x[0] == p_file or x[0].endswith(os.sep + p_file)), None)
+        processed_files: Set[str] = set()
+
+        for p_file in self._context_priority_files():
+            norm_target = p_file.replace('\\', '/').lower()
+            found = next(
+                (x for x in all_files_map if x[0].replace('\\', '/').lower() == norm_target),
+                None,
+            )
             if found:
-                add_file(*found, is_priority=True)
+                add_file(found[0], found[1], found[2], is_priority=True)
                 processed_files.add(found[0])
-        
-        # Add Remaining Files
-        for rel_path, path, size in all_files_map:
-            if rel_path in processed_files: continue
-            if not add_file(rel_path, path, size):
-                # If we hit the limit, stop adding content
-                # But we already have them in the file tree, so that's fine.
+
+        remaining = sorted(
+            (x for x in all_files_map if x[0] not in processed_files),
+            key=lambda item: (-item[3], item[2], item[0]),
+        )
+
+        for rel_path, path, size, score in remaining:
+            if not add_file(rel_path, path, size, is_priority=score >= 50):
                 break
-                    
+
         return "\n".join(context)
