@@ -9,3 +9,5 @@ beautifulsoup4
 fastapi
 uvicorn
 apscheduler
+aiosqlite
+requests
