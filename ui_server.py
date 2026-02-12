@@ -5,6 +5,7 @@ import traceback
 import json
 import logging
 import shutil
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -57,6 +58,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def _has_route_path_prefix(path_prefix: str) -> bool:
+    try:
+        routes = getattr(getattr(app, "router", None), "routes", []) or []
+        for r in routes:
+            p = getattr(r, "path", "") or ""
+            if p.startswith(path_prefix):
+                return True
+    except Exception:
+        return False
+    return False
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"DEBUG: Middleware received request: {request.method} {request.url}")
@@ -101,6 +113,15 @@ async def startup_event():
     component_manager = ComponentManager(BASE_DIR, trust_system, fastapi_app=app)
     logger.info("🧩 ComponentManager: Scanning for components...")
     component_manager.load_all_components()
+    # Safety net: ensure Docling API routes are mounted even if plugin route
+    # tracking/attach state gets out of sync.
+    if not _has_route_path_prefix("/api/docling"):
+        try:
+            from plugins import docling_ingest  # type: ignore
+            app.include_router(docling_ingest.router)
+            logger.info("✅ Docling router mounted via startup fallback.")
+        except Exception as e:
+            logger.error(f"Docling router fallback mount failed: {e}")
     component_manager.start_watcher()
     
     logger.info("✅ UI Server Ready.")
@@ -111,6 +132,11 @@ class CoderGenerateRequest(BaseModel):
     model: Optional[str] = "claude-3-5-sonnet-20241022"
     api_base: Optional[str] = None
     api_key: Optional[str] = None
+
+class ChatRequest(BaseModel):
+    model: Optional[str] = None
+    message: Optional[str] = ""
+    images: Optional[List[Dict[str, str]]] = None
 
 class AutoFixConfigRequest(BaseModel):
     auto_fix_enabled: bool
@@ -130,6 +156,32 @@ class ApplyPatchesRequest(BaseModel):
     patches: List[Patch]
 
 
+class ActiveQuotaRequest(BaseModel):
+    filename: Optional[str] = None
+
+
+def _parse_time_to_epoch(value: Optional[str]) -> Optional[float]:
+    if not value:
+        return None
+    raw = value.strip()
+    if not raw:
+        return None
+    try:
+        # Accept unix timestamps as string
+        return float(raw)
+    except ValueError:
+        pass
+    try:
+        # Support ISO forms, including trailing Z.
+        normalized = raw.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(normalized)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.timestamp()
+    except Exception:
+        raise HTTPException(status_code=400, detail=f"Invalid datetime format: {value}")
+
+
 # --- Endpoints ---
 
 @app.get("/api/status")
@@ -138,13 +190,73 @@ async def status(qm = Depends(get_quota_manager)):
         "status": "running", 
         "pid": os.getpid(),
         "models": qm.get_all_models(),
-        "speed_override": qm.get_speed_override()
+        "speed_override": qm.get_speed_override(),
+        "active_quota_file": qm.get_active_quota_file(),
+        "active_quota_mode": "single" if qm.get_active_quota_file() else "all",
     }
 
 @app.get("/api/chat/models")
 async def get_models(qm = Depends(get_quota_manager)):
     models = qm.get_all_models()
     return {"models": models}
+
+
+@app.get("/api/model-call-logs")
+async def get_model_call_logs(
+    limit: int = 200,
+    model: Optional[str] = None,
+    status: Optional[str] = None,
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+    engine = Depends(get_ai_engine),
+):
+    start_ts = _parse_time_to_epoch(start)
+    end_ts = _parse_time_to_epoch(end)
+    if start_ts is not None and end_ts is not None and start_ts > end_ts:
+        raise HTTPException(status_code=400, detail="start cannot be greater than end")
+    return await engine.get_model_call_logs(
+        limit=limit,
+        model=model,
+        status=status,
+        start_ts=start_ts,
+        end_ts=end_ts,
+    )
+
+
+@app.get("/api/model-call-metrics")
+async def get_model_call_metrics(
+    days: int = 7,
+    status: Optional[str] = "success",
+    engine = Depends(get_ai_engine),
+):
+    return await engine.get_model_call_metrics(days=days, status=status)
+
+@app.post("/api/chat")
+async def chat(req: ChatRequest, engine = Depends(get_ai_engine)):
+    try:
+        message = (req.message or "").strip()
+        model = req.model
+        raw_images = req.images or []
+
+        images = []
+        for img in raw_images:
+            if not isinstance(img, dict):
+                continue
+            mime_type = img.get("mime_type")
+            data = img.get("data")
+            if mime_type and data:
+                images.append({"mime_type": mime_type, "data": data})
+
+        result = await engine.generate_content(model, message, images=images)
+        if isinstance(result, dict):
+            response_text = result.get("text") or json.dumps(result)
+        else:
+            response_text = str(result)
+
+        return {"response": response_text}
+    except Exception as e:
+        logger.error(f"Chat API Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/components")
 async def get_components():
@@ -308,12 +420,53 @@ async def rollback(req: RollbackRequest):
 # --- Quota File Management ---
 
 @app.get("/api/quotas")
-async def list_quotas():
+async def list_quotas(qm = Depends(get_quota_manager)):
     quota_dir = os.path.join(BASE_DIR, "quotas")
     files = []
     if os.path.exists(quota_dir):
         files = [f for f in os.listdir(quota_dir) if f.endswith(".json")]
-    return {"files": files}
+    active = qm.get_active_quota_file()
+    return {
+        "files": files,
+        "active_file": active,
+        "mode": "single" if active else "all",
+    }
+
+
+@app.get("/api/quotas/active")
+async def get_active_quota(qm = Depends(get_quota_manager)):
+    active = qm.get_active_quota_file()
+    return {
+        "active_file": active,
+        "mode": "single" if active else "all",
+        "files": qm.list_quota_files(),
+    }
+
+
+@app.post("/api/quotas/active")
+async def set_active_quota(req: ActiveQuotaRequest, qm = Depends(get_quota_manager)):
+    try:
+        return qm.set_active_quota_file(req.filename)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+@app.post("/api/reload_config")
+async def reload_config(qm = Depends(get_quota_manager)):
+    try:
+        active_before = qm.get_active_quota_file()
+        qm._sync_configuration_from_json()
+        if active_before:
+            qm.redis.set("config:global:active_quota_file", os.path.basename(active_before))
+        else:
+            qm.redis.set("config:global:active_quota_file", "__all__")
+        return {
+            "success": True,
+            "active_file": qm.get_active_quota_file(),
+            "mode": "single" if qm.get_active_quota_file() else "all",
+            "files": qm.list_quota_files(),
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Reload failed: {str(e)}")
 
 @app.delete("/api/quotas/{filename}")
 async def delete_quota(filename: str, qm = Depends(get_quota_manager)):
@@ -358,6 +511,11 @@ async def upload_quota(file: UploadFile = File(...), qm = Depends(get_quota_mana
 
 @app.get("/")
 async def root():
+    return FileResponse(os.path.join(BASE_DIR, "dashboard.html"))
+
+
+@app.get("/dashboard")
+async def dashboard():
     return FileResponse(os.path.join(BASE_DIR, "dashboard.html"))
 
 # --- Anthropic Proxy Endpoints ---

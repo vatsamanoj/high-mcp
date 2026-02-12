@@ -109,7 +109,7 @@ class NotificationSystem:
             }
             
             try:
-                httpx.post(url, data=message, headers=headers, timeout=5.0)
+                httpx.post(url, content=message, headers=headers, timeout=5.0)
             except Exception as e:
                 # Fail silently for push notifications to not disrupt main flow
                 print(f"Warning: Failed to send mobile notification: {e}")

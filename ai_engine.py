@@ -1,4 +1,4 @@
-import httpx
+﻿import httpx
 import json
 import time
 import os
@@ -24,6 +24,27 @@ class AIEngine:
             await self.request_repo.initialize()
             self._repo_initialized = True
 
+    async def get_model_call_logs(
+        self,
+        limit: int = 200,
+        model: Optional[str] = None,
+        status: Optional[str] = None,
+        start_ts: Optional[float] = None,
+        end_ts: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        await self._ensure_repo()
+        return await self.request_repo.get_model_call_logs(
+            limit=limit,
+            model=model,
+            status=status,
+            start_ts=start_ts,
+            end_ts=end_ts,
+        )
+
+    async def get_model_call_metrics(self, days: int = 7, status: Optional[str] = "success") -> Dict[str, Any]:
+        await self._ensure_repo()
+        return await self.request_repo.get_model_call_metrics(days=days, status=status)
+
     async def generate_content(self, model_name: Optional[str], text: str, images: list = None, response_format: str = "text", tools: list = None) -> Any:
         """
         Generate content using available AI models with fallback support.
@@ -33,22 +54,26 @@ class AIEngine:
             # Set a global timeout for the entire generation process (e.g., 2 minutes)
             return await asyncio.wait_for(self._generate_content_internal(model_name, text, images, response_format, tools), timeout=120.0)
         except asyncio.TimeoutError:
-            print(f"❌ Generation Timed Out after 120s")
+            print("Generation timed out after 120s")
             return "Error: Request timed out. The AI took too long to respond."
         except Exception as e:
-            print(f"❌ Unexpected Error in generate_content: {e}")
+            print(f"Unexpected error in generate_content: {e}")
             return f"Error: {str(e)}"
 
     async def _generate_content_internal(self, model_name: Optional[str], text: str, images: list = None, response_format: str = "text", tools: list = None) -> Any:
         await self._ensure_repo()
+        has_images = bool(images)
+        request_hash = None
+        if text or images:
+            request_hash = self.request_repo.compute_hash(text or "", images, model_name=model_name)
         
         # 0. Handle Empty Prompt -> Show Cache/History
         if not text and not images and not tools:
             recent = await self.request_repo.get_recent_requests(limit=5)
             if not recent:
-                return "ℹ️ Cache is empty. Send a message to start!"
+                return "Cache is empty. Send a message to start!"
             
-            response = "## 🕒 Recent Cached Requests\n\n"
+            response = "## Recent Cached Requests\\n\\n"
             for r in recent:
                 short_input = r['input'][:50] + "..." if len(r['input']) > 50 else r['input']
                 t_str = time.strftime('%H:%M:%S', time.localtime(r['timestamp']))
@@ -61,20 +86,20 @@ class AIEngine:
         if not text and images:
             img_hash = self.request_repo.compute_image_hash(images)
             if img_hash:
-                cached_pair = await self.request_repo.get_cached_response_by_image_hash(img_hash)
+                cached_pair = await self.request_repo.get_cached_response_by_image_hash(img_hash, model_name=model_name)
                 if cached_pair:
                     cached_resp, original_prompt = cached_pair
-                    print(f"✨ Image Cache Hit! Returning stored response for image hash {img_hash[:8]}...")
+                    print(f"Image cache hit for hash {img_hash[:8]}")
                     return f"**[Cached Result from prompt: '{original_prompt}']**\n\n{cached_resp}"
         
         # 1. Check for 100% Match Cache
         # Only use cache if response_format is text (default), to avoid caching non-json when json was requested or vice versa
         # Or include format in hash? For now, skip cache for json mode to be safe/fresh.
-        if response_format == "text":
-            input_hash = self.request_repo.compute_hash(text, images)
+        if response_format == "text" and model_name:
+            input_hash = self.request_repo.compute_hash(text, images, model_name=model_name)
             cached_response = await self.request_repo.get_cached_response(input_hash)
             if cached_response:
-                print(f"✨ Cache Hit! Returning stored response for hash {input_hash[:8]}...")
+                print(f"Cache hit for hash {input_hash[:8]}")
                 return cached_response
 
         # 2. Check for Template Match (Minimize Tokens)
@@ -87,33 +112,43 @@ class AIEngine:
             # It's just regex matching, should be microsecond scale.
             optimized_prompt, debug_info = self.request_repo.find_matching_template(text)
             if optimized_prompt:
-                print(f"🧩 Template Matched! optimizing prompt: {len(text)} -> {len(optimized_prompt)} chars")
+                print(f"Template matched. Prompt reduced: {len(text)} -> {len(optimized_prompt)} chars")
                 final_prompt = optimized_prompt
 
         attempted_models = set()
+        excluded_models = set()
         current_model_name = model_name
         
         max_attempts = 5
         attempts = 0
         
         while attempts < max_attempts:
-            # Get a model to try
-            actual_model_name, api_config = await self.quota_manager.get_model_for_request(current_model_name)
-            sys.stderr.write(f"DEBUG: get_model_for_request returned {actual_model_name}\n")
+            # Get a model/config candidate and avoid retrying the same failing pair.
+            actual_model_name, api_config = await self._get_next_model_candidate(
+                current_model_name,
+                attempted_models,
+                excluded_models,
+            )
+            sys.stderr.write(f"DEBUG: selected model candidate {actual_model_name}\n")
             sys.stderr.flush()
             
             if not actual_model_name:
+                await self.request_repo.save_model_call(
+                    requested_model=model_name,
+                    actual_model=None,
+                    config_file=None,
+                    provider=None,
+                    response_format=response_format,
+                    has_images=has_images,
+                    input_hash=request_hash,
+                    status="no_available_model",
+                    error_text="No available models found (all quotas exhausted or no models loaded).",
+                )
                 return "Error: No available models found (all quotas exhausted or no models loaded)."
                 
             config_file = api_config.get("config_file")
             attempt_key = f"{actual_model_name}|{config_file}"
             
-            if attempt_key in attempted_models:
-                # We've already tried this specific combo in this request cycle
-                current_model_name = None
-                attempts += 1  # Prevent infinite loop
-                continue
-
             attempted_models.add(attempt_key)
             attempts += 1
             
@@ -121,12 +156,24 @@ class AIEngine:
             api_key = api_config.get("api_key")
             
             if not api_endpoint or not api_key:
+                await self.request_repo.save_model_call(
+                    requested_model=model_name,
+                    actual_model=actual_model_name,
+                    config_file=config_file,
+                    provider=api_config.get("provider"),
+                    response_format=response_format,
+                    has_images=has_images,
+                    input_hash=request_hash,
+                    status="invalid_config",
+                    error_text="Missing API endpoint or key.",
+                )
                 current_model_name = None
                 continue
 
             provider = api_config.get("provider", "google")
             model_id = await self._resolve_model_id(actual_model_name, api_endpoint, api_key)
             params = api_config.get("params", {})
+            attempt_started = time.perf_counter()
             
             try:
                 print(f"Trying model: {actual_model_name} ({model_id}) via {provider}...")
@@ -138,22 +185,53 @@ class AIEngine:
                     result = await self._call_openai_api(api_endpoint, api_key, model_id, final_prompt, params, images, response_format)
                 else:
                     print(f"Unknown provider {provider} for model {actual_model_name}")
+                    await self.request_repo.save_model_call(
+                        requested_model=model_name,
+                        actual_model=actual_model_name,
+                        config_file=config_file,
+                        provider=provider,
+                        response_format=response_format,
+                        has_images=has_images,
+                        input_hash=request_hash,
+                        status="unknown_provider",
+                        error_text=f"Unknown provider: {provider}",
+                    )
                     current_model_name = None
                     continue
                     
                 # Update Quota
                 total_tokens = result.get("usage", 0)
+                input_tokens = int(result.get("input_tokens", 0) or 0)
+                output_tokens = int(result.get("output_tokens", 0) or 0)
+                cost_usd = result.get("cost_usd")
                 response_text = result.get("text", "")
                 tool_calls = result.get("tool_calls", None)
+                latency_ms = round((time.perf_counter() - attempt_started) * 1000.0, 2)
                 
                 await self.quota_manager.update_quota(actual_model_name, tokens_used=total_tokens, request_count=1, config_file=config_file)
+                await self.request_repo.save_model_call(
+                    requested_model=model_name,
+                    actual_model=actual_model_name,
+                    config_file=config_file,
+                    provider=provider,
+                    response_format=response_format,
+                    has_images=has_images,
+                    input_hash=request_hash,
+                    status="success",
+                    tokens_used=total_tokens,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    latency_ms=latency_ms,
+                    cost_usd=float(cost_usd) if cost_usd is not None else None,
+                )
                 
                 # 3. Save to Cache (Map ORIGINAL hash to result)
                 # Only cache text responses for now
                 if response_format == "text" and not tool_calls:
-                    input_hash = self.request_repo.compute_hash(text, images)
+                    cache_model_name = model_name or actual_model_name
+                    input_hash = self.request_repo.compute_hash(text, images, model_name=cache_model_name)
                     image_hash = self.request_repo.compute_image_hash(images) if images else None
-                    await self.request_repo.save_request(input_hash, text, response_text, actual_model_name, image_hash)
+                    await self.request_repo.save_request(input_hash, text, response_text, cache_model_name, image_hash)
 
                 if tool_calls:
                     return {"text": response_text, "tool_calls": tool_calls}
@@ -162,6 +240,31 @@ class AIEngine:
             except Exception as e:
                 error_msg = str(e)
                 print(f"Exception with {actual_model_name}: {error_msg}")
+                excluded_models.add(actual_model_name)
+                try:
+                    await self.quota_manager.update_quota(actual_model_name, tokens_used=0, request_count=1, config_file=config_file)
+                except Exception as quota_err:
+                    print(f"Quota update on failure skipped for {actual_model_name}: {quota_err}")
+                error_code = None
+                if error_msg.startswith("HTTP_ERROR:"):
+                    try:
+                        parts = error_msg.split(":", 2)
+                        error_code = int(parts[1])
+                    except Exception:
+                        error_code = None
+                await self.request_repo.save_model_call(
+                    requested_model=model_name,
+                    actual_model=actual_model_name,
+                    config_file=config_file,
+                    provider=provider,
+                    response_format=response_format,
+                    has_images=has_images,
+                    input_hash=request_hash,
+                    status="failure",
+                    error_code=error_code,
+                    error_text=error_msg[:1000],
+                    latency_ms=round((time.perf_counter() - attempt_started) * 1000.0, 2),
+                )
                 
                 # Check for blocking errors
                 if error_msg.startswith("HTTP_ERROR:"):
@@ -192,6 +295,58 @@ class AIEngine:
                 current_model_name = None # Clear preference
                 
         return "Error: Failed to generate content after multiple attempts."
+
+    async def _get_all_model_names(self) -> List[str]:
+        get_all_models = getattr(self.quota_manager, "get_all_models", None)
+        if not callable(get_all_models):
+            return []
+        try:
+            models_data = get_all_models()
+            if asyncio.iscoroutine(models_data):
+                models_data = await models_data
+            if not isinstance(models_data, list):
+                return []
+            names: List[str] = []
+            for item in models_data:
+                if isinstance(item, dict):
+                    model_name = item.get("model")
+                    if model_name:
+                        names.append(model_name)
+            return names
+        except Exception:
+            return []
+
+    async def _get_next_model_candidate(
+        self,
+        preferred_model: Optional[str],
+        attempted_models: Set[str],
+        excluded_models: Set[str],
+    ) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
+        candidates: List[Optional[str]] = []
+
+        if preferred_model and preferred_model not in excluded_models:
+            candidates.append(preferred_model)
+
+        for model_name in await self._get_all_model_names():
+            if model_name in excluded_models:
+                continue
+            if model_name not in candidates:
+                candidates.append(model_name)
+
+        if not candidates:
+            candidates.append(None)
+
+        for candidate in candidates:
+            actual_model_name, api_config = await self.quota_manager.get_model_for_request(candidate)
+            if not actual_model_name or not api_config:
+                continue
+            config_file = api_config.get("config_file")
+            attempt_key = f"{actual_model_name}|{config_file}"
+            if attempt_key in attempted_models or actual_model_name in excluded_models:
+                continue
+            return actual_model_name, api_config
+
+        return None, None
 
     async def _resolve_model_id(self, model_name: str, api_endpoint: str, api_key: str) -> str:
         if not self.model_id_mapping:
@@ -272,6 +427,8 @@ class AIEngine:
         
         usage = data.get("usageMetadata", {})
         total_tokens = usage.get("totalTokenCount", 0)
+        input_tokens = int(usage.get("promptTokenCount", 0) or 0)
+        output_tokens = int(usage.get("candidatesTokenCount", 0) or 0)
         
         response_text = ""
         tool_calls = []
@@ -289,8 +446,19 @@ class AIEngine:
             
         if total_tokens == 0:
             total_tokens = int((len(text) + len(response_text)) / 4)
+        if input_tokens == 0 or output_tokens == 0:
+            # Fallback estimates when provider metadata is incomplete.
+            input_tokens = input_tokens or int(len(text) / 4)
+            output_tokens = output_tokens or int(len(response_text) / 4)
             
-        return {"text": response_text if response_text else json.dumps(data, indent=2), "usage": total_tokens, "tool_calls": tool_calls}
+        return {
+            "text": response_text if response_text else json.dumps(data, indent=2),
+            "usage": total_tokens,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cost_usd": None,
+            "tool_calls": tool_calls,
+        }
 
     async def _call_openai_api(self, api_endpoint: str, api_key: str, model_id: str, text: str, params: dict = None, images: list = None, response_format: str = "text") -> dict:
         url = f"{api_endpoint.rstrip('/')}/chat/completions"
@@ -336,7 +504,12 @@ class AIEngine:
         data = response.json()
         
         usage = data.get("usage", {})
-        total_tokens = usage.get("total_tokens", 0)
+        total_tokens = int(usage.get("total_tokens", 0) or 0)
+        input_tokens = int(usage.get("prompt_tokens", 0) or 0)
+        output_tokens = int(usage.get("completion_tokens", 0) or 0)
+        cost_usd = data.get("cost")
+        if cost_usd is None and isinstance(usage, dict):
+            cost_usd = usage.get("cost")
         
         response_text = ""
         try:
@@ -345,7 +518,22 @@ class AIEngine:
         except:
             pass
             
-        return {"text": response_text if response_text else json.dumps(data, indent=2), "usage": total_tokens}
+        if total_tokens == 0:
+            total_tokens = int((len(text) + len(response_text)) / 4)
+        if input_tokens == 0 or output_tokens == 0:
+            input_tokens = input_tokens or int(len(text) / 4)
+            output_tokens = output_tokens or int(len(response_text) / 4)
+        try:
+            parsed_cost = float(cost_usd) if cost_usd is not None else None
+        except Exception:
+            parsed_cost = None
+        return {
+            "text": response_text if response_text else json.dumps(data, indent=2),
+            "usage": total_tokens,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cost_usd": parsed_cost,
+        }
 
     async def generate_patch(self, prompt: str, model_name: Optional[str] = None, progress_callback: Optional[Any] = None) -> Dict[str, Any]:
         """
@@ -353,9 +541,9 @@ class AIEngine:
         """
         if progress_callback:
             if asyncio.iscoroutinefunction(progress_callback):
-                await progress_callback("📂 Reading project structure...")
+                await progress_callback("Reading project structure...")
             else:
-                progress_callback("📂 Reading project structure...")
+                progress_callback("Reading project structure...")
 
         # We can't easily pass async callback to sync running in thread, 
         # so we'll just log before/after or refactor _get_project_context to be async later. 
@@ -364,7 +552,7 @@ class AIEngine:
         context = await asyncio.to_thread(self._get_project_context, prompt)
         
         if progress_callback:
-            msg = f"✅ Context loaded ({len(context)} chars). Constructing prompt..."
+            msg = f"Context loaded ({len(context)} chars). Constructing prompt..."
             if asyncio.iscoroutinefunction(progress_callback):
                 await progress_callback(msg)
             else:
@@ -404,7 +592,7 @@ class AIEngine:
         full_prompt = f"{system_prompt}\n{context}\n\nUser Request: {prompt}\n\nRespond ONLY with valid JSON."
         
         if progress_callback:
-            msg = f"🚀 Sending request to AI Model ({model_name or 'Auto'})..."
+            msg = f"Sending request to AI model ({model_name or 'Auto'})..."
             if asyncio.iscoroutinefunction(progress_callback):
                 await progress_callback(msg)
             else:
@@ -415,7 +603,7 @@ class AIEngine:
         response_text = await self.generate_content(model_name, full_prompt, response_format="json")
         
         if progress_callback:
-            msg = "📥 Response received. Parsing JSON..."
+            msg = "Response received. Parsing JSON..."
             if asyncio.iscoroutinefunction(progress_callback):
                 await progress_callback(msg)
             else:
@@ -431,7 +619,7 @@ class AIEngine:
                 result = json.loads(json_str)
                 
                 if progress_callback:
-                    msg = "✨ Patch generation complete!"
+                    msg = "Patch generation complete."
                     if asyncio.iscoroutinefunction(progress_callback):
                         await progress_callback(msg)
                     else:
@@ -440,15 +628,15 @@ class AIEngine:
                 return result
             else:
                 # If no JSON block is found, return the raw response with an error message
-                print(f"❌ No JSON found in response. Raw response:\n{response_text}")
+                print(f"No JSON found in response. Raw response:\n{response_text}")
                 return {"error": "No JSON found in response. Please ensure the AI returns valid JSON.", "raw_response": response_text}
         except json.JSONDecodeError as e:
             # Specific error for JSON decoding issues
-            print(f"❌ JSON Decode Error: {e}. Raw response:\n{response_text}")
+            print(f"JSON Decode Error: {e}. Raw response:\n{response_text}")
             return {"error": f"JSON Decode Error: {e}. The response was:\n{response_text}", "raw_response": response_text}
         except Exception as e:
             # Catch-all for other unexpected errors during parsing
-            print(f"❌ Unexpected error parsing JSON: {e}")
+            print(f"Unexpected error parsing JSON: {e}")
             return {"error": f"An unexpected error occurred during JSON parsing: {e}", "raw_response": response_text}
 
     MAX_CONTEXT_CHARS = 28000
@@ -539,14 +727,15 @@ class AIEngine:
 
                 path = os.path.join(root, file)
                 rel_path = os.path.relpath(path, self.base_dir)
+                rel_path_display = rel_path.replace('\\', '/')
                 try:
                     size = os.path.getsize(path)
                 except OSError:
                     continue
 
                 file_tree.append(f"{indent}  {file}")
-                score = self._score_context_file(rel_path, prompt_terms)
-                all_files_map.append((rel_path, path, size, score))
+                score = self._score_context_file(rel_path_display, prompt_terms)
+                all_files_map.append((rel_path_display, path, size, score))
 
         context.append("\n".join(file_tree))
         context.append("\n\nFile Contents:")
@@ -601,3 +790,4 @@ class AIEngine:
                 break
 
         return "\n".join(context)
+

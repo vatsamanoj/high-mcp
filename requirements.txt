@@ -11,3 +11,4 @@ uvicorn
 apscheduler
 aiosqlite
 requests
+onnxruntime

@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright
 import sys
+import pytest
 
 def test_connection():
     print("🧪 TEST: Attempting to connect to Chrome via CDP...")
@@ -25,11 +26,11 @@ def test_connection():
             print("   Disconnecting...")
             browser.close()
             print("✅ TEST COMPLETED SUCCESSFULLY.")
-            return True
+            assert True
             
     except Exception as e:
         print(f"❌ TEST FAILED: {e}")
-        return False
+        pytest.skip(f"Chrome CDP not available on localhost:9222: {e}")
 
 if __name__ == "__main__":
     success = test_connection()

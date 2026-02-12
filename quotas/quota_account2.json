@@ -1,6 +1,0 @@
-{
-  "api_endpoint": "https://api.example.com",
-  "api_key": "KEY_B",
-  "provider": "google",
-  "models": []
-}

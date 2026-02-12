@@ -13,7 +13,8 @@
       }
 
       const chatInput = document.getElementById('chat-input');
-      if (chatInput && typeof global.sendMessage === 'function') {
+      const hasInlineEnterHandler = !!(chatInput && chatInput.getAttribute('onkeydown'));
+      if (chatInput && typeof global.sendMessage === 'function' && !hasInlineEnterHandler) {
         chatInput.addEventListener('keydown', (event) => {
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();

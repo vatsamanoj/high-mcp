@@ -432,9 +432,14 @@
                 <li><button onclick="switchView('coder')">🤖 AI Coder</button></li>
                 <li><button onclick="switchView('templates')">📝 Templates</button></li>
                 <li><button onclick="switchView('models')">🤖 Models & Quotas</button></li>
+                <li><button onclick="switchView('model-calls')">📞 Model Calls</button></li>
                 <li><button onclick="switchView('autofix')">🔧 Auto-Fix & Health</button></li>
                 <li><button onclick="switchView('versions')">🛡️ Versions & Trust</button></li>
                 <li><button onclick="switchView('files')">📂 File Management</button></li>
+                <li><button onclick="switchView('docling')">📄 Document AI</button></li>
+                <li><button onclick="switchView('template-manager')">🗂️ Template Manager</button></li>
+                <li><button onclick="switchView('learning')">📈 Learning History</button></li>
+                <li><button onclick="switchView('llm-ranking')">🧠 LLM Ranking</button></li>
                 <li><button onclick="switchView('superpowers')">🦸 Superpowers</button></li>
                 <li><button onclick="switchView('plugins')">🔌 Plugins</button></li>
             </ul>
@@ -569,12 +574,18 @@
         <div id="view-models" class="view-section">
             <header>
                 <h1>Models & Quotas</h1>
-                <div style="display:flex; gap:10px; align-items:center;">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <label style="display:flex; align-items:center; gap:5px; font-size:14px; cursor:pointer; color:var(--text-secondary);">
                         <input type="checkbox" id="show-active-only" onchange="fetchStatus()" checked> 
                         Show Active Only
                     </label>
                     <button class="action-btn" onclick="fetchStatus()">Refresh</button>
+                    <label style="color:var(--text-secondary); font-size:13px;">Active Quota</label>
+                    <select id="active-quota-file-select" style="padding:8px; border-radius:6px; background:var(--card-bg); color:var(--text-primary); border:1px solid var(--border-color); min-width:230px;">
+                        <option value="all">All quota files</option>
+                    </select>
+                    <button class="action-btn" onclick="applyActiveQuotaFile()">Apply</button>
+                    <span id="active-quota-file-label" style="font-size:12px; color:var(--text-secondary);">Using: all</span>
                 </div>
             </header>
             <div class="card">
@@ -585,12 +596,65 @@
                             <th onclick="sortTable('tier')" data-col="tier" style="cursor:pointer">Tier ↕</th>
                             <th onclick="sortTable('category')" data-col="category" style="cursor:pointer">Category ↕</th>
                             <th onclick="sortTable('providers')" data-col="providers" style="cursor:pointer">Provider ↕</th>
+                            <th onclick="sortTable('active_quota_files')" data-col="active_quota_files" style="cursor:pointer">Quota File ↕</th>
                             <th onclick="sortTable('status')" data-col="status" style="cursor:pointer">Status ↕</th>
                             <th onclick="sortTable('rpm_used')" data-col="rpm_used" style="cursor:pointer">RPM Used ↕</th>
+                            <th onclick="sortTable('rpm_left')" data-col="rpm_left" style="cursor:pointer">RPM Left ↕</th>
                             <th onclick="sortTable('rpd_used')" data-col="rpd_used" style="cursor:pointer">RPD Used ↕</th>
+                            <th onclick="sortTable('rpd_left')" data-col="rpd_left" style="cursor:pointer">RPD Left ↕</th>
+                            <th onclick="sortTable('speed')" data-col="speed" style="cursor:pointer">Speed ↕</th>
+                            <th onclick="sortTable('tokens')" data-col="tokens" style="cursor:pointer">Tokens ↕</th>
+                            <th onclick="sortTable('cost')" data-col="cost" style="cursor:pointer">Cost (USD) ↕</th>
                         </tr>
                     </thead>
                     <tbody><!-- Populated by JS --></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MODEL CALLS VIEW -->
+        <div id="view-model-calls" class="view-section">
+            <header>
+                <h1>Model Call Logs</h1>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <input id="mc-model" type="text" placeholder="model (optional)" style="padding:8px; border-radius:6px; background:var(--card-bg); color:var(--text-primary); border:1px solid var(--border-color); min-width:220px;">
+                    <select id="mc-status" style="padding:8px; border-radius:6px; background:var(--card-bg); color:var(--text-primary); border:1px solid var(--border-color);">
+                        <option value="all">All Status</option>
+                        <option value="success">Success</option>
+                        <option value="failure">Failure</option>
+                        <option value="invalid_config">Invalid Config</option>
+                        <option value="unknown_provider">Unknown Provider</option>
+                        <option value="no_available_model">No Available Model</option>
+                    </select>
+                    <input id="mc-start" type="datetime-local" style="padding:8px; border-radius:6px; background:var(--card-bg); color:var(--text-primary); border:1px solid var(--border-color);">
+                    <input id="mc-end" type="datetime-local" style="padding:8px; border-radius:6px; background:var(--card-bg); color:var(--text-primary); border:1px solid var(--border-color);">
+                    <input id="mc-limit" type="number" min="1" max="2000" value="200" style="width:90px; padding:8px; border-radius:6px; background:var(--card-bg); color:var(--text-primary); border:1px solid var(--border-color);">
+                    <button id="mc-refresh-btn" class="action-btn">Refresh</button>
+                </div>
+            </header>
+
+            <div class="grid-3">
+                <div class="card"><h3 style="color:var(--text-secondary); font-size:14px; margin-top:0;">Total Calls</h3><div id="mc-total" style="font-size:28px; font-weight:600;">0</div></div>
+                <div class="card"><h3 style="color:var(--text-secondary); font-size:14px; margin-top:0;">Success</h3><div id="mc-success" style="font-size:28px; font-weight:600; color:var(--success-color);">0</div></div>
+                <div class="card"><h3 style="color:var(--text-secondary); font-size:14px; margin-top:0;">Failure</h3><div id="mc-failure" style="font-size:28px; font-weight:600; color:var(--danger-color);">0</div></div>
+            </div>
+
+            <div class="card">
+                <div id="mc-status-line" style="margin-bottom:10px; color:var(--text-secondary); font-size:13px;">Ready.</div>
+                <table id="mc-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortModelCallTable('ts')" data-col="ts" style="cursor:pointer">Time (UTC) ↕</th>
+                            <th onclick="sortModelCallTable('requested_model')" data-col="requested_model" style="cursor:pointer">Requested ↕</th>
+                            <th onclick="sortModelCallTable('actual_model')" data-col="actual_model" style="cursor:pointer">Actual ↕</th>
+                            <th onclick="sortModelCallTable('status')" data-col="status" style="cursor:pointer">Status ↕</th>
+                            <th onclick="sortModelCallTable('provider')" data-col="provider" style="cursor:pointer">Provider ↕</th>
+                            <th onclick="sortModelCallTable('config_file')" data-col="config_file" style="cursor:pointer">Config ↕</th>
+                            <th onclick="sortModelCallTable('tokens_used')" data-col="tokens_used" style="cursor:pointer">Tokens ↕</th>
+                            <th onclick="sortModelCallTable('error_text')" data-col="error_text" style="cursor:pointer">Error ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
@@ -689,6 +753,260 @@
                 <div class="card">
                     <h2>Existing Files</h2>
                     <ul id="file-list" style="list-style:none; padding:0; margin:0;"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- DOCLING VIEW -->
+        <div id="view-docling" class="view-section">
+            <header>
+                <h1>Document AI</h1>
+            </header>
+
+            <div class="card">
+                <h2>Convert</h2>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <label style="color:var(--text-secondary);">Template</label>
+                    <select id="docling-smart-template" style="padding:10px; border-radius:6px; background:var(--bg-color); color:var(--text-primary); border:1px solid var(--border-color);">
+                        <option value="auto" selected>Auto Match</option>
+                    </select>
+                    <label style="color:var(--text-secondary);">Source path or URL (optional when file is uploaded)</label>
+                    <input id="docling-source" type="text" placeholder="e.g. C:\\docs\\invoice.pdf or https://example.com/file.pdf" style="width:100%; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px;">
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input id="docling-file" type="file" style="color:var(--text-secondary);">
+                        <button id="docling-convert-btn" class="primary-btn">Convert</button>
+                    </div>
+                    <label style="display:none;">
+                        <input type="checkbox" id="docling-smart-required">
+                    </label>
+                    <input type="hidden" id="docling-extractor" value="auto">
+                    <select id="docling-model-select" style="display:none;">
+                        <option value="arcee-ai/trinity-large-preview:free" selected>arcee-ai/trinity-large-preview:free</option>
+                    </select>
+                </div>
+                <div id="docling-status" style="margin-top:10px; color:var(--text-secondary); font-size:13px;">Ready.</div>
+            </div>
+
+            <div class="card">
+                <h2>JSON Output</h2>
+                <textarea id="docling-json" class="chat-input" style="height:220px; width:100%; font-family:monospace;" placeholder="Structured JSON output appears here..."></textarea>
+            </div>
+        </div>
+
+        <!-- TEMPLATE MANAGER VIEW -->
+        <div id="view-template-manager" class="view-section">
+            <header>
+                <h1>Template Manager</h1>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button id="template-manager-refresh-btn" class="action-btn">Refresh</button>
+                </div>
+            </header>
+
+            <div class="card">
+                <h2>Create / Edit Template</h2>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <input id="tm-name" type="text" placeholder="template name (e.g. safta)" style="width:100%; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px;">
+                    <input id="tm-aliases" type="text" placeholder="aliases (comma separated, optional)" style="width:100%; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px;">
+                    <textarea id="tm-guidance" placeholder="guidance/rules for extraction (optional)" style="width:100%; min-height:90px; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px; font-family:monospace;"></textarea>
+                    <textarea id="tm-schema" placeholder='JSON schema object' style="width:100%; min-height:220px; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px; font-family:monospace;"></textarea>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <button id="tm-save-btn" class="primary-btn">Save Template</button>
+                        <button id="tm-delete-btn" class="action-btn">Delete Template</button>
+                        <label style="display:flex; align-items:center; gap:6px; color:var(--text-secondary);">
+                            <input type="checkbox" id="tm-delete-profiles" checked>
+                            Delete profiles too
+                        </label>
+                    </div>
+                </div>
+                <div id="tm-status" style="margin-top:10px; color:var(--text-secondary); font-size:13px;">Ready.</div>
+            </div>
+
+            <div class="card">
+                <h2>Upload Template</h2>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <label style="color:var(--text-secondary);">Template Type (e.g. safta, invoice, letter_of_credit)</label>
+                    <input id="tm-upload-type" type="text" placeholder="e.g. safta" style="width:100%; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); border-radius:6px;">
+                    <label style="color:var(--text-secondary);">Upload JSON template/example</label>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <input id="tm-upload-file" type="file" accept=".json,application/json" style="color:var(--text-secondary);">
+                        <button id="tm-upload-btn" class="primary-btn">Upload Template</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Templates</h2>
+                <div style="overflow:auto;">
+                    <table id="tm-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Aliases</th>
+                                <th>Fields</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Upload History</h2>
+                <div style="overflow:auto;">
+                    <table id="tm-history-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Action</th>
+                                <th>Template</th>
+                                <th>Source</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEARNING VIEW -->
+        <div id="view-learning" class="view-section">
+            <header>
+                <h1>Template Ranking History</h1>
+            </header>
+
+            <div class="card">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <label style="color:var(--text-secondary);">Template</label>
+                    <select id="learning-template" style="padding:10px; border-radius:6px; background:var(--bg-color); color:var(--text-primary); border:1px solid var(--border-color);">
+                        <option value="all" selected>All</option>
+                        <option value="invoice">Invoice</option>
+                        <option value="letter_of_credit">Letter of Credit</option>
+                    </select>
+                    <label style="color:var(--text-secondary);">Limit</label>
+                    <input id="learning-limit" type="number" min="10" max="1000" value="200" style="width:110px; padding:10px; border-radius:6px; background:var(--bg-color); color:var(--text-primary); border:1px solid var(--border-color);">
+                    <button id="learning-refresh-btn" class="primary-btn">Refresh</button>
+                </div>
+                <div id="learning-status" style="margin-top:10px; color:var(--text-secondary); font-size:13px;">Ready.</div>
+            </div>
+
+            <div class="grid-4">
+                <div class="stat-card">
+                    <div class="stat-value" id="learning-total">0</div>
+                    <div class="stat-label">Total Records</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="learning-avg">0%</div>
+                    <div class="stat-label">Average Match</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="learning-99">0</div>
+                    <div class="stat-label">99% Match</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="learning-95">0</div>
+                    <div class="stat-label">95% Match</div>
+                </div>
+            </div>
+            <div class="grid-4">
+                <div class="stat-card">
+                    <div class="stat-value" id="learning-90">0</div>
+                    <div class="stat-label">90% Match</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="learning-success">0</div>
+                    <div class="stat-label">Success</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="learning-partial">0</div>
+                    <div class="stat-label">Partial</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="learning-failed">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Ranking Records</h2>
+                <div style="overflow:auto;">
+                    <table id="learning-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Template</th>
+                                <th>Match %</th>
+                                <th>Tier</th>
+                                <th>Parser</th>
+                                <th>Best Profile</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM RANKING VIEW -->
+        <div id="view-llm-ranking" class="view-section">
+            <header>
+                <h1>LLM Ranking History</h1>
+            </header>
+
+            <div class="card">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <label style="color:var(--text-secondary);">Template</label>
+                    <select id="llm-template" style="padding:10px; border-radius:6px; background:var(--bg-color); color:var(--text-primary); border:1px solid var(--border-color);">
+                        <option value="all" selected>All</option>
+                        <option value="invoice">Invoice</option>
+                        <option value="letter_of_credit">Letter of Credit</option>
+                    </select>
+                    <label style="color:var(--text-secondary);">Limit</label>
+                    <input id="llm-limit" type="number" min="10" max="1000" value="200" style="width:110px; padding:10px; border-radius:6px; background:var(--bg-color); color:var(--text-primary); border:1px solid var(--border-color);">
+                    <button id="llm-refresh-btn" class="primary-btn">Refresh</button>
+                </div>
+                <div id="llm-status" style="margin-top:10px; color:var(--text-secondary); font-size:13px;">Ready.</div>
+            </div>
+
+            <div class="grid-4">
+                <div class="stat-card">
+                    <div class="stat-value" id="llm-total">0</div>
+                    <div class="stat-label">Total Runs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="llm-success">0</div>
+                    <div class="stat-label">Success</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="llm-partial">0</div>
+                    <div class="stat-label">Partial</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="llm-failed">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Model Attempts</h2>
+                <div style="overflow:auto;">
+                    <table id="llm-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Template</th>
+                                <th>Status</th>
+                                <th>Selected Model</th>
+                                <th>Top Attempt</th>
+                                <th>Speed</th>
+                                <th>Parser</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -827,7 +1145,7 @@
 
     
     <script src="/dashboard_plugins/plugin-registry.js"></script>
-    <script src="/dashboard_plugins/core-legacy.js"></script>
+    <script src="/dashboard_plugins/core-legacy.js?v=20260212-1"></script>
     <script src="/dashboard_plugins/plugin-core-bootstrap.js"></script>
     <script src="/dashboard_plugins/plugin-navigation.js"></script>
     <script>
@@ -836,3 +1154,5 @@
 
 </body>
 </html>
+
+

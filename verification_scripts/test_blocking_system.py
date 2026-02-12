@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import time
+import asyncio
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from redis_quota_manager import RedisQuotaManager
@@ -49,7 +50,7 @@ def test_blocking_system():
     ai_engine = AIEngine(quota_manager)
     
     # 2. Trigger the error
-    response = ai_engine.generate_content("gemini-fake-block", "Hello")
+    response = asyncio.run(ai_engine.generate_content("gemini-fake-block", "Hello"))
     print(f"📡 Response: {response}")
     
     # 3. Check if blocked

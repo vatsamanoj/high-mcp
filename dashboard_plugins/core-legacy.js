@@ -2,9 +2,15 @@ const API_BASE = 'http://localhost:8004/api';
         let autofixConfig = {};
         let pendingAttachments = []; // Stores {type, mime_type, data, name, content, previewUrl}
         let lastModels = [];
+        let modelMetrics = {};
+        let activeQuotaFile = null;
         let currentSort = { column: 'tier', dir: 'asc' };
         let currentPatches = null;
         let currentPlan = null; // Store the latest generated plan
+        let isChatSending = false;
+        let isDoclingBusy = false;
+        let modelCallSort = { column: 'ts', dir: 'desc' };
+        let modelCallRows = [];
 
         // --- Navigation ---
         function switchView(viewName) {
@@ -22,6 +28,17 @@ const API_BASE = 'http://localhost:8004/api';
                 fetchTemplates();
             } else if (viewName === 'coder') {
                 fetchCoderModels();
+            } else if (viewName === 'docling') {
+                fetchDoclingModels();
+                fetchDoclingTemplates();
+            } else if (viewName === 'template-manager') {
+                fetchTemplateManagerData();
+            } else if (viewName === 'learning') {
+                fetchLearningHistory();
+            } else if (viewName === 'llm-ranking') {
+                fetchLlmRankingHistory();
+            } else if (viewName === 'model-calls') {
+                fetchModelCallLogs();
             } else if (viewName === 'plugins') {
                 fetchComponents();
             }
@@ -54,8 +71,15 @@ const API_BASE = 'http://localhost:8004/api';
 
         async function fetchStatus() {
             try {
-                const response = await fetch(`${API_BASE}/status`);
-                const data = await response.json();
+                const [statusRes, metricsRes] = await Promise.all([
+                    fetch(`${API_BASE}/status`),
+                    fetch(`${API_BASE}/model-call-metrics?days=7&status=success`),
+                ]);
+                const data = await statusRes.json();
+                const metricsData = await metricsRes.json();
+                modelMetrics = (metricsData && metricsData.models) ? metricsData.models : {};
+                activeQuotaFile = data.active_quota_file || null;
+                fetchActiveQuotaState();
                 lastModels = data.models;
                 updateDashboard(data);
                 updateModelsTable(data.models);
@@ -96,11 +120,25 @@ const API_BASE = 'http://localhost:8004/api';
             models.sort((a, b) => {
                 let valA = a[currentSort.column];
                 let valB = b[currentSort.column];
+                const perfA = modelMetrics[a.model] || {};
+                const perfB = modelMetrics[b.model] || {};
 
                 if (currentSort.column === 'tier') {
                     const tierOrder = { "free": 1, "economical": 2, "standard": 3, "premium": 4 };
                     valA = tierOrder[valA] || 3;
                     valB = tierOrder[valB] || 3;
+                } else if (currentSort.column === 'speed') {
+                    valA = Number(perfA.avg_latency_ms || 0);
+                    valB = Number(perfB.avg_latency_ms || 0);
+                } else if (currentSort.column === 'tokens') {
+                    valA = Number(perfA.total_tokens || 0);
+                    valB = Number(perfB.total_tokens || 0);
+                } else if (currentSort.column === 'cost') {
+                    valA = Number(perfA.total_cost_usd || 0);
+                    valB = Number(perfB.total_cost_usd || 0);
+                } else if (currentSort.column === 'active_quota_files') {
+                    valA = ((a.active_quota_files || []).join(', ') || '').toLowerCase();
+                    valB = ((b.active_quota_files || []).join(', ') || '').toLowerCase();
                 } else if (currentSort.column === 'providers') {
                      valA = (valA || []).join(', ').toLowerCase();
                      valB = (valB || []).join(', ').toLowerCase();
@@ -123,6 +161,22 @@ const API_BASE = 'http://localhost:8004/api';
                 const tr = document.createElement('tr');
                 const isAvail = model.available;
                 const providersStr = (model.providers || []).join(', ');
+                const rpmLimit = Number(model.rpm_limit ?? -1);
+                const rpdLimit = Number(model.rpd_limit ?? -1);
+                const rpmUsed = Number(model.rpm_used ?? 0);
+                const rpdUsed = Number(model.rpd_used ?? 0);
+                const rpmLeft = Number.isFinite(Number(model.rpm_left))
+                    ? Number(model.rpm_left)
+                    : (rpmLimit < 0 ? -1 : Math.max(rpmLimit - rpmUsed, 0));
+                const rpdLeft = Number.isFinite(Number(model.rpd_left))
+                    ? Number(model.rpd_left)
+                    : (rpdLimit < 0 ? -1 : Math.max(rpdLimit - rpdUsed, 0));
+                const perf = modelMetrics[model.model] || {};
+                const avgLatencyMs = Number(perf.avg_latency_ms || 0);
+                const totalTokens = Number(perf.total_tokens || 0);
+                const totalCost = Number(perf.total_cost_usd || 0);
+                const quotaFiles = (model.active_quota_files || model.quota_files || []);
+                const quotaFileStr = quotaFiles.length ? quotaFiles.join(', ') : '-';
                 
                 tr.innerHTML = `
                     <td style="font-weight:500; display:flex; align-items:center;">
@@ -132,9 +186,15 @@ const API_BASE = 'http://localhost:8004/api';
                     <td><span class="badge badge-${(model.tier || 'std').toLowerCase().substring(0,4)}">${model.tier}</span></td>
                     <td>${model.category}</td>
                     <td>${providersStr}</td>
+                    <td>${quotaFileStr}</td>
                     <td style="color:${isAvail ? 'var(--success-color)' : 'var(--danger-color)'}">${isAvail ? 'Active' : 'Blocked'}</td>
-                    <td>${model.rpm_used.toFixed(1)} / ${formatLimit(model.rpm_limit)}</td>
-                    <td>${model.rpd_used.toFixed(1)} / ${formatLimit(model.rpd_limit)}</td>
+                    <td>${rpmUsed.toFixed(1)} / ${formatLimit(rpmLimit)}</td>
+                    <td>${formatLimit(rpmLeft)}</td>
+                    <td>${rpdUsed.toFixed(1)} / ${formatLimit(rpdLimit)}</td>
+                    <td>${formatLimit(rpdLeft)}</td>
+                    <td>${formatLatency(avgLatencyMs)}</td>
+                    <td>${formatNumber(totalTokens)}</td>
+                    <td>${formatUsd(totalCost)}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -339,13 +399,14 @@ const API_BASE = 'http://localhost:8004/api';
         }
 
         async function sendMessage() {
+            if (isChatSending) return;
+
             const input = document.getElementById('chat-input');
             let message = input.value.trim();
             const modelSelect = document.getElementById('chat-model-select');
             const model = modelSelect.value;
             
-            // Allow empty message to check cache/history
-            // if (!message && pendingAttachments.length === 0) return;
+            if (!message && pendingAttachments.length === 0) return;
             
             if (!model) { alert("Please select a model first."); return; }
 
@@ -365,6 +426,8 @@ const API_BASE = 'http://localhost:8004/api';
                 mime_type: a.mime_type,
                 data: a.data
             }));
+
+            isChatSending = true;
 
             // 1. Render User Message
             addMessageToChat('user', input.value.trim(), [...pendingAttachments]); 
@@ -424,6 +487,8 @@ const API_BASE = 'http://localhost:8004/api';
                 const loadingMsg = document.querySelector(`[data-id="${loadingId}"] .message-content`);
                 loadingMsg.textContent = "Network Error: " + e.message;
                 loadingMsg.style.color = "var(--danger-color)";
+            } finally {
+                isChatSending = false;
             }
         }
 
@@ -467,6 +532,21 @@ const API_BASE = 'http://localhost:8004/api';
         }
 
         function formatLimit(val) { return val < 0 ? '∞' : val; }
+        function formatNumber(val) {
+            const n = Number(val || 0);
+            return Number.isFinite(n) ? n.toLocaleString() : '-';
+        }
+        function formatLatency(ms) {
+            const n = Number(ms || 0);
+            if (!Number.isFinite(n) || n <= 0) return '-';
+            if (n < 1000) return `${n.toFixed(0)} ms`;
+            return `${(n / 1000).toFixed(2)} s`;
+        }
+        function formatUsd(v) {
+            const n = Number(v || 0);
+            if (!Number.isFinite(n) || n <= 0) return '-';
+            return `$${n.toFixed(6)}`;
+        }
 
         // --- Auto-Fix ---
         async function fetchAutoFixData() {
@@ -679,6 +759,7 @@ const API_BASE = 'http://localhost:8004/api';
                         <button class="action-btn" style="color:var(--danger-color); border-color:var(--danger-color); padding:2px 8px;" onclick="deleteFile('${f}')">Delete</button>
                     </li>
                 `).join('');
+                fetchActiveQuotaState();
             } catch(e) {}
         }
 
@@ -686,6 +767,7 @@ const API_BASE = 'http://localhost:8004/api';
             if(!confirm(`Delete ${f}?`)) return;
             await fetch(`${API_BASE}/quotas/${f}`, { method: 'DELETE' });
             fetchFiles();
+            fetchStatus();
         }
 
         // Drag & Drop
@@ -706,6 +788,805 @@ const API_BASE = 'http://localhost:8004/api';
             await fetch(`${API_BASE}/quotas/upload`, { method: 'POST', body: formData });
             alert("Uploaded!");
             fetchFiles();
+            fetchStatus();
+        }
+
+        // --- Docling ---
+        function setDoclingStatus(message, isError = false) {
+            const status = document.getElementById('docling-status');
+            if (!status) return;
+            status.textContent = message;
+            status.style.color = isError ? 'var(--danger-color)' : 'var(--text-secondary)';
+        }
+
+        async function ensureDoclingPluginReady() {
+            try {
+                const res = await fetch(`${API_BASE}/components`);
+                const data = await res.json();
+                const comp = (data.components || []).find(c => c.name === 'docling_ingest');
+                if (!comp) return;
+                if (!comp.in_use || Number(comp.routes || 0) === 0) {
+                    await fetch(`${API_BASE}/components/docling_ingest/attach`, { method: 'POST' });
+                }
+            } catch (e) {
+                // Non-fatal: conversion may still work if route is already attached.
+                console.warn("ensureDoclingPluginReady warning:", e);
+            }
+        }
+
+        async function fetchDoclingModels() {
+            const select = document.getElementById('docling-model-select');
+            if (!select) return;
+            try {
+                const response = await fetch(`${API_BASE}/chat/models`);
+                const data = await response.json();
+                const models = (data.models || []).filter(m => m.available);
+                select.innerHTML = '';
+                if (models.length === 0) {
+                    select.innerHTML = '<option value="">No active models</option>';
+                    return;
+                }
+                models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.model;
+                    opt.text = `${m.model} (${m.category || 'general'})`;
+                    select.add(opt);
+                });
+                const preferred = models.find(m => (m.model || '').toLowerCase() === 'arcee-ai/trinity-large-preview:free');
+                if (preferred) select.value = preferred.model;
+            } catch (e) {
+                setDoclingStatus(`Failed to load models: ${e.message}`, true);
+            }
+        }
+
+        async function fetchDoclingTemplates() {
+            const select = document.getElementById('docling-smart-template');
+            if (!select) return;
+            try {
+                await ensureDoclingPluginReady();
+                const response = await fetch(`${API_BASE}/docling/templates/definitions`);
+                const data = await response.json();
+                const templates = Array.isArray(data.templates) ? data.templates : [];
+                const current = (select.value || 'auto').trim().toLowerCase();
+                select.innerHTML = '';
+
+                const autoOpt = document.createElement('option');
+                autoOpt.value = 'auto';
+                autoOpt.text = 'Auto Match';
+                select.add(autoOpt);
+
+                templates.forEach(t => {
+                    const name = (t.name || '').trim();
+                    if (!name) return;
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.text = name.replace(/_/g, ' ');
+                    select.add(opt);
+                });
+
+                if ([...select.options].some(o => o.value.toLowerCase() === current)) {
+                    select.value = current;
+                } else if ([...select.options].some(o => o.value.toLowerCase() === 'auto')) {
+                    select.value = 'auto';
+                } else if ([...select.options].some(o => o.value.toLowerCase() === 'invoice')) {
+                    select.value = 'invoice';
+                } else {
+                    select.value = 'auto';
+                }
+            } catch (e) {
+                setDoclingStatus(`Failed to load templates: ${e.message}`, true);
+            }
+        }
+
+        async function doclingConvert() {
+            if (isDoclingBusy) return;
+            const sourceEl = document.getElementById('docling-source');
+            const fileEl = document.getElementById('docling-file');
+            const extractorEl = document.getElementById('docling-extractor');
+            const smartTemplateEl = document.getElementById('docling-smart-template');
+            const smartRequiredEl = document.getElementById('docling-smart-required');
+            const modelEl = document.getElementById('docling-model-select');
+            const jsonEl = document.getElementById('docling-json');
+            const source = (sourceEl?.value || '').trim();
+            const file = fileEl?.files?.[0];
+            const extractor = (extractorEl?.value || 'auto').trim();
+            const smartTemplate = (smartTemplateEl?.value || 'auto').trim();
+            const smartRequired = !!(smartRequiredEl?.checked);
+            const smartModel = (modelEl?.value || 'arcee-ai/trinity-large-preview:free').trim();
+
+            if (!source && !file) {
+                setDoclingStatus('Provide a source path/URL or upload a file.', true);
+                return;
+            }
+
+            isDoclingBusy = true;
+            setDoclingStatus('Converting with Docling...');
+            try {
+                await ensureDoclingPluginReady();
+                const commonQuery =
+                    `extractor=${encodeURIComponent(extractor)}` +
+                    `&smart_template=${encodeURIComponent(smartTemplate)}` +
+                    `&smart_model=${encodeURIComponent(smartModel)}` +
+                    `&smart_required=${encodeURIComponent(String(smartRequired))}`;
+
+                const sendConvert = async () => {
+                    if (file) {
+                        const form = new FormData();
+                        form.append('file', file);
+                        return fetch(`${API_BASE}/docling/convert?${commonQuery}`, { method: 'POST', body: form });
+                    }
+                    const query = encodeURIComponent(source);
+                    return fetch(`${API_BASE}/docling/convert?source=${query}&${commonQuery}`, { method: 'POST' });
+                };
+
+                let response = await sendConvert();
+                if (response.status === 404) {
+                    await ensureDoclingPluginReady();
+                    response = await sendConvert();
+                }
+
+                const raw = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(raw || '{}');
+                } catch {
+                    data = { detail: raw || 'Invalid server response' };
+                }
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Docling convert failed');
+                }
+                if (jsonEl) {
+                    const payload = data.structured_extraction
+                        ? data.structured_extraction
+                        : (data.json_output || {});
+                    jsonEl.value = JSON.stringify(payload, null, 2);
+                }
+                const fallbackNote = data.fallback_used ? ', fallback used' : '';
+                const actualModel = data.actual_model_used || data.model_used || '';
+                const modelNote = actualModel ? `, model=${actualModel}` : '';
+                const requestedSmartModel = data.smart_model ? `, requested=${data.smart_model}` : '';
+                const ocrModelNote = data.ocr_model_used ? `, ocr_model=${data.ocr_model_used}` : '';
+                const parserNote = data.parser ? `, parser=${data.parser}` : '';
+                const singleCallNote = data.single_call_path ? ', single_call=on' : '';
+                const comp = data.llm_prompt_compaction || data.llm_seed_prompt_compaction || null;
+                const compactNote = (comp && comp.compacted && comp.source_chars && comp.compacted_chars)
+                    ? `, compact=${comp.compacted_chars}/${comp.source_chars}`
+                    : '';
+                const profileFallbackNote = actualModel === 'template_profile_fallback'
+                    ? ', reason=low-confidence llm -> profile fallback'
+                    : '';
+                const smartNote = data.smart_template && data.smart_template !== 'none'
+                    ? `, smart=${data.smart_template}`
+                    : '';
+                setDoclingStatus(`Converted successfully (${data.chars || 0} chars, ${data.extractor || extractor}${parserNote}${modelNote}${requestedSmartModel}${ocrModelNote}${singleCallNote}${compactNote}${fallbackNote}${profileFallbackNote}${smartNote}).`);
+            } catch (e) {
+                setDoclingStatus(`Convert failed: ${e.message}`, true);
+            } finally {
+                isDoclingBusy = false;
+            }
+        }
+
+        async function uploadDoclingTemplate() {
+            const fileEl = document.getElementById('tm-upload-file');
+            const typeEl = document.getElementById('tm-upload-type');
+            const file = fileEl?.files?.[0];
+            const templateType = (typeEl?.value || '').trim();
+            if (!file) {
+                setTemplateManagerStatus('Select a template JSON file first.', true);
+                return;
+            }
+            setTemplateManagerStatus('Uploading template...');
+            try {
+                await ensureDoclingPluginReady();
+                const form = new FormData();
+                form.append('file', file);
+                const query = templateType ? `?template=${encodeURIComponent(templateType)}` : '';
+                const res = await fetch(`${API_BASE}/docling/templates/upload${query}`, {
+                    method: 'POST',
+                    body: form,
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Template upload failed');
+                if (fileEl) fileEl.value = '';
+                await fetchDoclingTemplates();
+                await fetchTemplateManagerData();
+                setTemplateManagerStatus(`Template uploaded (${data.template || templateType || 'auto-detected'}).`);
+            } catch (e) {
+                setTemplateManagerStatus(`Template upload failed: ${e.message}`, true);
+            }
+        }
+
+        async function doclingRefine() {
+            if (isDoclingBusy) return;
+            const markdownEl = document.getElementById('docling-markdown');
+            const refinedEl = document.getElementById('docling-refined');
+            const modelEl = document.getElementById('docling-model-select');
+            const instructionEl = document.getElementById('docling-instruction');
+            const useSuperpowersEl = document.getElementById('docling-use-superpowers');
+            const superpowerModeEl = document.getElementById('docling-superpower-mode');
+
+            const markdown = (markdownEl?.value || '').trim();
+            const instruction = (instructionEl?.value || '').trim();
+            const model = (modelEl?.value || '').trim();
+            const useSuperpowers = !!(useSuperpowersEl?.checked);
+            const superpowerMode = (superpowerModeEl?.value || 'review').trim();
+
+            if (!markdown) {
+                setDoclingStatus('No markdown to refine. Convert a document first.', true);
+                return;
+            }
+            if (!instruction) {
+                setDoclingStatus('Instruction is required for refinement.', true);
+                return;
+            }
+            if (!model) {
+                setDoclingStatus('Select a model first.', true);
+                return;
+            }
+
+            isDoclingBusy = true;
+            setDoclingStatus('Refining with AI...');
+            try {
+                await ensureDoclingPluginReady();
+                const response = await fetch(`${API_BASE}/docling/refine`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        markdown,
+                        instruction,
+                        model,
+                        use_superpowers: useSuperpowers,
+                        superpower_mode: superpowerMode,
+                    }),
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Docling refine failed');
+                }
+                if (refinedEl) refinedEl.value = data.refined_markdown || '';
+                if (useSuperpowers && data.superpowers) {
+                    refinedEl.value += `\n\n---\n\nSuperpowers Output (${superpowerMode}):\n${typeof data.superpowers === 'string' ? data.superpowers : JSON.stringify(data.superpowers, null, 2)}`;
+                }
+                setDoclingStatus(`Refined successfully (${data.chunks || 0} chunk(s)).`);
+            } catch (e) {
+                setDoclingStatus(`Refine failed: ${e.message}`, true);
+            } finally {
+                isDoclingBusy = false;
+            }
+        }
+
+        function bindDoclingActions() {
+            const convertBtn = document.getElementById('docling-convert-btn');
+            const refineBtn = document.getElementById('docling-refine-btn');
+            if (convertBtn && !convertBtn.dataset.boundClick) {
+                convertBtn.addEventListener('click', doclingConvert);
+                convertBtn.dataset.boundClick = '1';
+            }
+            if (refineBtn && !refineBtn.dataset.boundClick) {
+                refineBtn.addEventListener('click', doclingRefine);
+                refineBtn.dataset.boundClick = '1';
+            }
+        }
+
+        // --- Template Manager ---
+        let templateManagerRows = [];
+
+        function setTemplateManagerStatus(message, isError = false) {
+            const el = document.getElementById('tm-status');
+            if (!el) return;
+            el.textContent = message;
+            el.style.color = isError ? 'var(--danger-color)' : 'var(--text-secondary)';
+        }
+
+        function loadTemplateManagerForm(row) {
+            if (!row) return;
+            const nameEl = document.getElementById('tm-name');
+            const aliasesEl = document.getElementById('tm-aliases');
+            const guidanceEl = document.getElementById('tm-guidance');
+            const schemaEl = document.getElementById('tm-schema');
+            if (nameEl) nameEl.value = row.name || '';
+            if (aliasesEl) aliasesEl.value = Array.isArray(row.aliases) ? row.aliases.join(', ') : '';
+            if (guidanceEl) guidanceEl.value = row.guidance || '';
+            if (schemaEl) schemaEl.value = JSON.stringify(row.schema || {}, null, 2);
+            setTemplateManagerStatus(`Loaded template '${row.name}'.`);
+        }
+
+        function renderTemplateManagerRows(templates) {
+            templateManagerRows = Array.isArray(templates) ? templates : [];
+            const tbody = document.querySelector('#tm-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (!templateManagerRows.length) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="4" style="color:var(--text-secondary);">No templates found.</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+            templateManagerRows.forEach(row => {
+                const tr = document.createElement('tr');
+                const aliases = Array.isArray(row.aliases) ? row.aliases.join(', ') : '';
+                const fieldCount = Number(row.field_count || 0);
+                tr.innerHTML = `
+                    <td>${row.name || '-'}</td>
+                    <td>${aliases || '-'}</td>
+                    <td>${fieldCount}</td>
+                    <td></td>
+                `;
+                const actionTd = tr.querySelector('td:last-child');
+                const editBtn = document.createElement('button');
+                editBtn.className = 'action-btn';
+                editBtn.textContent = 'Edit';
+                editBtn.addEventListener('click', () => loadTemplateManagerForm(row));
+                actionTd.appendChild(editBtn);
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function fetchActiveQuotaState() {
+            try {
+                const res = await fetch(`${API_BASE}/quotas/active`);
+                const data = await res.json();
+                if (!res.ok) return;
+                const select = document.getElementById('active-quota-file-select');
+                const label = document.getElementById('active-quota-file-label');
+                if (!select || !label) return;
+                const files = Array.isArray(data.files) ? data.files : [];
+                const active = data.active_file || null;
+                activeQuotaFile = active;
+                select.innerHTML = '<option value="all">All quota files</option>';
+                files.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f;
+                    opt.text = f;
+                    if (active && active === f) opt.selected = true;
+                    select.add(opt);
+                });
+                if (!active) select.value = 'all';
+                label.textContent = `Using: ${active || 'all quota files'}`;
+            } catch (e) {
+                console.error("Fetch active quota state error", e);
+            }
+        }
+
+        async function applyActiveQuotaFile() {
+            const select = document.getElementById('active-quota-file-select');
+            if (!select) return;
+            const value = (select.value || 'all').trim();
+            try {
+                const res = await fetch(`${API_BASE}/quotas/active`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: value === 'all' ? null : value }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Failed to apply active quota file');
+                await fetchActiveQuotaState();
+                await fetchStatus();
+            } catch (e) {
+                alert(`Failed to apply quota file: ${e.message}`);
+            }
+        }
+
+        function renderTemplateUploadHistory(records) {
+            const tbody = document.querySelector('#tm-history-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const rows = Array.isArray(records) ? records : [];
+            if (!rows.length) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="5" style="color:var(--text-secondary);">No upload history found.</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                const details = JSON.stringify(r.details || {});
+                tr.innerHTML = `
+                    <td>${r.ts || '-'}</td>
+                    <td>${r.action || '-'}</td>
+                    <td>${r.template || '-'}</td>
+                    <td>${r.source || '-'}</td>
+                    <td style="max-width:420px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${details}</td>
+                `;
+                const detailsCell = tr.querySelector('td:last-child');
+                if (detailsCell) detailsCell.title = details;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function fetchTemplateManagerData() {
+            setTemplateManagerStatus('Loading template manager data...');
+            try {
+                await ensureDoclingPluginReady();
+                const [defsRes, histRes] = await Promise.all([
+                    fetch(`${API_BASE}/docling/templates/definitions`),
+                    fetch(`${API_BASE}/docling/templates/uploads/history?limit=200`),
+                ]);
+                const defs = await defsRes.json();
+                const hist = await histRes.json();
+                if (!defsRes.ok) throw new Error(defs.detail || 'Failed to load template definitions');
+                if (!histRes.ok) throw new Error(hist.detail || 'Failed to load template upload history');
+                renderTemplateManagerRows(defs.templates || []);
+                renderTemplateUploadHistory(hist.records || []);
+                setTemplateManagerStatus(`Loaded ${defs.count || 0} template(s).`);
+            } catch (e) {
+                setTemplateManagerStatus(`Load failed: ${e.message}`, true);
+            }
+        }
+
+        async function saveTemplateManagerTemplate() {
+            const name = (document.getElementById('tm-name')?.value || '').trim();
+            const aliasesRaw = (document.getElementById('tm-aliases')?.value || '').trim();
+            const guidance = (document.getElementById('tm-guidance')?.value || '').trim();
+            const schemaText = (document.getElementById('tm-schema')?.value || '').trim();
+            if (!name) {
+                setTemplateManagerStatus('Template name is required.', true);
+                return;
+            }
+            if (!schemaText) {
+                setTemplateManagerStatus('Schema JSON is required.', true);
+                return;
+            }
+            let schema;
+            try {
+                schema = JSON.parse(schemaText);
+            } catch (e) {
+                setTemplateManagerStatus(`Invalid schema JSON: ${e.message}`, true);
+                return;
+            }
+            const aliases = aliasesRaw ? aliasesRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+            setTemplateManagerStatus('Saving template...');
+            try {
+                await ensureDoclingPluginReady();
+                const res = await fetch(`${API_BASE}/docling/templates/definitions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, aliases, guidance, schema }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Save failed');
+                await fetchTemplateManagerData();
+                await fetchDoclingTemplates();
+                setTemplateManagerStatus(`Saved template '${data.template || name}'.`);
+            } catch (e) {
+                setTemplateManagerStatus(`Save failed: ${e.message}`, true);
+            }
+        }
+
+        async function deleteTemplateManagerTemplate() {
+            const name = (document.getElementById('tm-name')?.value || '').trim();
+            const deleteProfiles = !!document.getElementById('tm-delete-profiles')?.checked;
+            if (!name) {
+                setTemplateManagerStatus('Enter template name to delete.', true);
+                return;
+            }
+            if (!confirm(`Delete template '${name}'?`)) return;
+            setTemplateManagerStatus('Deleting template...');
+            try {
+                await ensureDoclingPluginReady();
+                const url = `${API_BASE}/docling/templates/definitions/${encodeURIComponent(name)}?delete_profiles=${encodeURIComponent(String(deleteProfiles))}`;
+                const res = await fetch(url, { method: 'DELETE' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Delete failed');
+                await fetchTemplateManagerData();
+                await fetchDoclingTemplates();
+                setTemplateManagerStatus(`Deleted template '${data.template || name}'.`);
+            } catch (e) {
+                setTemplateManagerStatus(`Delete failed: ${e.message}`, true);
+            }
+        }
+
+        function bindTemplateManagerActions() {
+            const refreshBtn = document.getElementById('template-manager-refresh-btn');
+            const saveBtn = document.getElementById('tm-save-btn');
+            const deleteBtn = document.getElementById('tm-delete-btn');
+            const uploadBtn = document.getElementById('tm-upload-btn');
+            if (refreshBtn && !refreshBtn.dataset.boundClick) {
+                refreshBtn.addEventListener('click', fetchTemplateManagerData);
+                refreshBtn.dataset.boundClick = '1';
+            }
+            if (saveBtn && !saveBtn.dataset.boundClick) {
+                saveBtn.addEventListener('click', saveTemplateManagerTemplate);
+                saveBtn.dataset.boundClick = '1';
+            }
+            if (deleteBtn && !deleteBtn.dataset.boundClick) {
+                deleteBtn.addEventListener('click', deleteTemplateManagerTemplate);
+                deleteBtn.dataset.boundClick = '1';
+            }
+            if (uploadBtn && !uploadBtn.dataset.boundClick) {
+                uploadBtn.addEventListener('click', uploadDoclingTemplate);
+                uploadBtn.dataset.boundClick = '1';
+            }
+        }
+
+        // --- Learning History ---
+        function setLearningStatus(message, isError = false) {
+            const el = document.getElementById('learning-status');
+            if (!el) return;
+            el.textContent = message;
+            el.style.color = isError ? 'var(--danger-color)' : 'var(--text-secondary)';
+        }
+
+        function renderLearningHistory(data) {
+            const summary = data.summary || {};
+            const byTier = summary.by_tier || {};
+            const byStatus = summary.by_status || {};
+            document.getElementById('learning-total').textContent = summary.total || 0;
+            document.getElementById('learning-avg').textContent = `${summary.avg_best_match || summary.avg_match || 0}%`;
+            document.getElementById('learning-99').textContent = byTier['99% match'] || 0;
+            document.getElementById('learning-95').textContent = byTier['95% match'] || 0;
+            document.getElementById('learning-90').textContent = byTier['90% match'] || 0;
+            document.getElementById('learning-success').textContent = byStatus['success'] || 0;
+            document.getElementById('learning-partial').textContent = byStatus['partial'] || 0;
+            document.getElementById('learning-failed').textContent = byStatus['failed'] || 0;
+
+            const tbody = document.querySelector('#learning-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const rows = data.records || [];
+            if (!rows.length) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="8" style="color:var(--text-secondary);">No historical learning records found.</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                const score = Number(r.match_score || 0).toFixed(2);
+                tr.innerHTML = `
+                    <td>${r.ts || '-'}</td>
+                    <td>${r.template || '-'}</td>
+                    <td>${score}%</td>
+                    <td>${r.match_tier || '-'}</td>
+                    <td>${r.parser || '-'}</td>
+                    <td>${r.best_profile_id || '-'}</td>
+                    <td>${r.source || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function fetchLearningHistory() {
+            const template = (document.getElementById('learning-template')?.value || 'all').trim();
+            const limit = Number(document.getElementById('learning-limit')?.value || 200);
+            setLearningStatus('Loading learning history...');
+            try {
+                await ensureDoclingPluginReady();
+                const url = `${API_BASE}/docling/learning/template-rankings/history?template=${encodeURIComponent(template)}&limit=${encodeURIComponent(limit)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Failed to load learning history');
+                renderLearningHistory(data);
+                setLearningStatus(`Loaded ${data.summary?.total || 0} record(s).`);
+            } catch (e) {
+                setLearningStatus(`Load failed: ${e.message}`, true);
+            }
+        }
+
+        function bindLearningActions() {
+            const btn = document.getElementById('learning-refresh-btn');
+            if (btn && !btn.dataset.boundClick) {
+                btn.addEventListener('click', fetchLearningHistory);
+                btn.dataset.boundClick = '1';
+            }
+        }
+
+        // --- LLM Ranking ---
+        function setLlmStatus(message, isError = false) {
+            const el = document.getElementById('llm-status');
+            if (!el) return;
+            el.textContent = message;
+            el.style.color = isError ? 'var(--danger-color)' : 'var(--text-secondary)';
+        }
+
+        function renderLlmRankingHistory(data) {
+            const summary = data.summary || {};
+            const byStatus = summary.by_status || {};
+            const metrics = data.model_metrics || modelMetrics || {};
+            document.getElementById('llm-total').textContent = summary.total || 0;
+            document.getElementById('llm-success').textContent = byStatus.success || 0;
+            document.getElementById('llm-partial').textContent = byStatus.partial || 0;
+            document.getElementById('llm-failed').textContent = byStatus.failed || 0;
+
+            const tbody = document.querySelector('#llm-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const rows = data.records || [];
+            if (!rows.length) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="8" style="color:var(--text-secondary);">No LLM ranking records found.</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+            rows.forEach(r => {
+                const attempts = Array.isArray(r.attempts) ? r.attempts : [];
+                const top = attempts.length ? attempts[0] : null;
+                const topText = top ? `${top.model || '-'} (${Number(top.score || 0).toFixed(1)}%)` : '-';
+                const speedModel = (r.selected_model || (top ? top.model : '')) || '';
+                const speed = metrics[speedModel] ? formatLatency(metrics[speedModel].avg_latency_ms) : '-';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.ts || '-'}</td>
+                    <td>${r.template || '-'}</td>
+                    <td>${r.status || '-'}</td>
+                    <td>${r.selected_model || '-'}</td>
+                    <td>${topText}</td>
+                    <td>${speed}</td>
+                    <td>${r.parser || '-'}</td>
+                    <td>${r.source || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function fetchLlmRankingHistory() {
+            const template = (document.getElementById('llm-template')?.value || 'all').trim();
+            const limit = Number(document.getElementById('llm-limit')?.value || 200);
+            setLlmStatus('Loading LLM ranking history...');
+            try {
+                await ensureDoclingPluginReady();
+                const url = `${API_BASE}/docling/learning/llm-ranking/history?template=${encodeURIComponent(template)}&limit=${encodeURIComponent(limit)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Failed to load LLM ranking history');
+                renderLlmRankingHistory(data);
+                setLlmStatus(`Loaded ${data.summary?.total || 0} run(s).`);
+            } catch (e) {
+                setLlmStatus(`Load failed: ${e.message}`, true);
+            }
+        }
+
+        function bindLlmRankingActions() {
+            const btn = document.getElementById('llm-refresh-btn');
+            if (btn && !btn.dataset.boundClick) {
+                btn.addEventListener('click', fetchLlmRankingHistory);
+                btn.dataset.boundClick = '1';
+            }
+        }
+
+        // --- Model Call Logs ---
+        function setModelCallsStatus(message, isError = false) {
+            const el = document.getElementById('mc-status-line');
+            if (!el) return;
+            el.textContent = message;
+            el.style.color = isError ? 'var(--danger-color)' : 'var(--text-secondary)';
+        }
+
+        function renderModelCallLogs(data) {
+            const summary = data.summary || {};
+            const byStatus = summary.by_status || {};
+            document.getElementById('mc-total').textContent = summary.total || 0;
+            document.getElementById('mc-success').textContent = byStatus.success || 0;
+            document.getElementById('mc-failure').textContent = byStatus.failure || 0;
+
+            const tbody = document.querySelector('#mc-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            modelCallRows = Array.isArray(data.records) ? data.records.slice() : [];
+            const rows = modelCallRows.slice().sort((a, b) => {
+                const col = modelCallSort.column;
+                const dir = modelCallSort.dir === 'asc' ? 1 : -1;
+                const statusRank = { success: 1, failure: 2, invalid_config: 3, unknown_provider: 4, no_available_model: 5 };
+                let va = a ? a[col] : null;
+                let vb = b ? b[col] : null;
+
+                if (col === 'ts') {
+                    va = Date.parse(va || '') || 0;
+                    vb = Date.parse(vb || '') || 0;
+                } else if (col === 'tokens_used') {
+                    va = Number(va || 0);
+                    vb = Number(vb || 0);
+                } else if (col === 'status') {
+                    va = statusRank[(va || '').toString().toLowerCase()] || 99;
+                    vb = statusRank[(vb || '').toString().toLowerCase()] || 99;
+                } else {
+                    va = (va || '').toString().toLowerCase();
+                    vb = (vb || '').toString().toLowerCase();
+                }
+
+                if (va < vb) return -1 * dir;
+                if (va > vb) return 1 * dir;
+                return 0;
+            });
+            if (!rows.length) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="8" style="color:var(--text-secondary);">No model call logs found for current filters.</td>`;
+                tbody.appendChild(tr);
+                updateModelCallsHeaderArrows();
+                return;
+            }
+
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                const errText = (r.error_text || '').toString();
+                const shortErr = errText.length > 120 ? `${errText.slice(0, 120)}...` : errText;
+                const statusColor = r.status === 'success' ? 'var(--success-color)' : 'var(--danger-color)';
+                tr.innerHTML = `
+                    <td>${r.ts || '-'}</td>
+                    <td>${r.requested_model || '-'}</td>
+                    <td>${r.actual_model || '-'}</td>
+                    <td style="color:${statusColor}">${r.status || '-'}</td>
+                    <td>${r.provider || '-'}</td>
+                    <td>${r.config_file || '-'}</td>
+                    <td>${Number(r.tokens_used || 0)}</td>
+                    <td style="max-width:420px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${shortErr || '-'}</td>
+                `;
+                const errCell = tr.querySelector('td:last-child');
+                if (errCell && errText) errCell.title = errText;
+                tbody.appendChild(tr);
+            });
+            updateModelCallsHeaderArrows();
+        }
+
+        function updateModelCallsHeaderArrows() {
+            document.querySelectorAll('#mc-table th').forEach(th => {
+                const col = th.getAttribute('data-col');
+                if (!col) return;
+                th.textContent = th.textContent.replace(/ [↑↓↕]$/, '');
+                if (col === modelCallSort.column) {
+                    th.textContent += modelCallSort.dir === 'asc' ? ' ↑' : ' ↓';
+                } else {
+                    th.textContent += ' ↕';
+                }
+            });
+        }
+
+        function sortModelCallTable(column) {
+            if (!column) return;
+            if (modelCallSort.column === column) {
+                modelCallSort.dir = modelCallSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                modelCallSort.column = column;
+                modelCallSort.dir = (column === 'ts' || column === 'tokens_used') ? 'desc' : 'asc';
+            }
+            renderModelCallLogs({
+                summary: {
+                    total: modelCallRows.length,
+                    by_status: modelCallRows.reduce((acc, r) => {
+                        const s = (r.status || 'unknown').toString();
+                        acc[s] = (acc[s] || 0) + 1;
+                        return acc;
+                    }, {}),
+                },
+                records: modelCallRows.slice(),
+            });
+        }
+
+        async function fetchModelCallLogs() {
+            const model = (document.getElementById('mc-model')?.value || '').trim();
+            const status = (document.getElementById('mc-status')?.value || 'all').trim();
+            const start = (document.getElementById('mc-start')?.value || '').trim();
+            const end = (document.getElementById('mc-end')?.value || '').trim();
+            const limit = Math.max(1, Math.min(2000, Number(document.getElementById('mc-limit')?.value || 200)));
+
+            const query = new URLSearchParams();
+            query.set('limit', String(limit));
+            if (model) query.set('model', model);
+            if (status && status !== 'all') query.set('status', status);
+            if (start) query.set('start', new Date(start).toISOString());
+            if (end) query.set('end', new Date(end).toISOString());
+
+            setModelCallsStatus('Loading model call logs...');
+            try {
+                const res = await fetch(`${API_BASE}/model-call-logs?${query.toString()}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Failed to load model call logs');
+                renderModelCallLogs(data);
+                setModelCallsStatus(`Loaded ${data.summary?.returned || 0} of ${data.summary?.total || 0} call(s).`);
+            } catch (e) {
+                setModelCallsStatus(`Load failed: ${e.message}`, true);
+            }
+        }
+
+        function bindModelCallActions() {
+            const refreshBtn = document.getElementById('mc-refresh-btn');
+            if (refreshBtn && !refreshBtn.dataset.boundClick) {
+                refreshBtn.addEventListener('click', fetchModelCallLogs);
+                refreshBtn.dataset.boundClick = '1';
+            }
         }
 
         // --- Superpowers ---
@@ -1073,3 +1954,13 @@ async function fetchCoderModels() {
                 btn.textContent = "Apply Patch";
             }
         }
+
+        // Ensure inline handlers and other scripts can always reach these actions.
+        window.doclingConvert = doclingConvert;
+        window.doclingRefine = doclingRefine;
+        window.sortModelCallTable = sortModelCallTable;
+        bindDoclingActions();
+        bindTemplateManagerActions();
+        bindLearningActions();
+        bindLlmRankingActions();
+        bindModelCallActions();

@@ -1,0 +1,8 @@
+{
+  "ntfy": {
+    "enabled": true,
+    "topic": "high_mcp_system_alerts",
+    "priority": "high",
+    "server": "https://ntfy.sh"
+  }
+}

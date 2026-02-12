@@ -76,7 +76,7 @@ class ComponentManager:
 
     def load_all_components(self):
         """Loads all python modules found in components/ and plugins/ directories."""
-        print("🧩 ComponentManager: Scanning for components and plugins...")
+        print("ComponentManager: Scanning for components and plugins...")
         
         # Snapshot before loading (Integrity Checkpoint)
         # if self.trust_system:
@@ -125,6 +125,30 @@ class ComponentManager:
         remove_ids = {id(r) for r in routes_to_remove}
         router.routes = [r for r in routes if id(r) not in remove_ids]
 
+    def _ensure_module_router_attached(self, module: Any, before_routes: List[Any], rec: PluginRecord) -> None:
+        """
+        Safety fallback: if a plugin/module exposes `router` but setup did not
+        register routes (or route tracking missed them), attach it explicitly.
+        """
+        if not self.app:
+            return
+        if rec.routes:
+            return
+        module_router = getattr(module, "router", None)
+        if module_router is None:
+            return
+        include = getattr(self.app, "include_router", None)
+        if not callable(include):
+            return
+        try:
+            include(module_router)
+            after_routes = self._capture_routes()
+            rec.routes = self._diff_routes(before_routes, after_routes)
+            if rec.routes:
+                print(f"ComponentManager: Router fallback attached for {rec.name} ({len(rec.routes)} routes).")
+        except Exception as e:
+            print(f"ComponentManager WARNING: Router fallback failed for {rec.name}: {e}")
+
     def load_component(self, name: str) -> bool:
         """Loads a single component by name."""
         # Check Plugins First (Runtime Injection/Patch)
@@ -134,10 +158,10 @@ class ComponentManager:
             file_path = os.path.join(self.components_dir, f"{name}.py")
         
         if not os.path.exists(file_path):
-            print(f"❌ ComponentManager: Component {name} not found.")
+            print(f"ComponentManager ERROR: Component {name} not found.")
             return False
             
-        print(f"🧩 ComponentManager: Loading {name} from {file_path}...")
+        print(f"ComponentManager: Loading {name} from {file_path}...")
         
         try:
             module_key = self._module_key(name)
@@ -177,13 +201,14 @@ class ComponentManager:
 
             after_routes = self._capture_routes()
             rec.routes = self._diff_routes(before_routes, after_routes)
+            self._ensure_module_router_attached(module, before_routes, rec)
 
             self.loaded_components[name] = module
-            print(f"✅ ComponentManager: {name} loaded successfully.")
+            print(f"ComponentManager: {name} loaded successfully.")
             return True
             
         except Exception as e:
-            print(f"❌ ComponentManager: Failed to load {name}: {e}")
+            print(f"ComponentManager ERROR: Failed to load {name}: {e}")
             traceback.print_exc()
             return False
 
@@ -192,7 +217,7 @@ class ComponentManager:
         if not rec:
             return False
 
-        print(f"🧹 ComponentManager: Unloading {name}...")
+        print(f"ComponentManager: Unloading {name}...")
         kernel = MicroKernel(self, plugin_name=name)
         stop = getattr(rec.module, "stop", None)
         if callable(stop):
@@ -208,7 +233,7 @@ class ComponentManager:
         self.loaded_components.pop(name, None)
         self.plugin_records.pop(name, None)
         sys.modules.pop(rec.module_key, None)
-        print(f"✅ ComponentManager: {name} unloaded successfully.")
+        print(f"ComponentManager: {name} unloaded successfully.")
         return True
 
     def attach_component(self, name: str) -> bool:
@@ -225,7 +250,7 @@ class ComponentManager:
 
     def reload_component(self, name: str):
         """Reloads a component."""
-        print(f"🔄 ComponentManager: Reloading {name}...")
+        print(f"ComponentManager: Reloading {name}...")
         rec = self.plugin_records.get(name)
         if not rec:
             return self.load_component(name)
@@ -274,10 +299,11 @@ class ComponentManager:
 
             after_routes = self._capture_routes()
             rec.routes = self._diff_routes(before_routes, after_routes)
-            print(f"✅ ComponentManager: {name} reloaded successfully.")
+            self._ensure_module_router_attached(reloaded, before_routes, rec)
+            print(f"ComponentManager: {name} reloaded successfully.")
             return True
         except Exception as e:
-            print(f"❌ ComponentManager: Failed to reload {name}: {e}")
+            print(f"ComponentManager ERROR: Failed to reload {name}: {e}")
             traceback.print_exc()
             return False
 

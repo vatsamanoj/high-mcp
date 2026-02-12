@@ -41,3 +41,12 @@ debug_log.txt
 debug_output.txt
 stdout_*.txt
 stderr_*.txt
+
+# Project generated artifacts
+quotas/
+logs/
+.tmp*
+*.tmp
+temp/
+tmp/
+*.zip

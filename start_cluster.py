@@ -6,14 +6,54 @@ import signal
 import psutil
 import httpx
 
+
+def run_plugin_audit():
+    """
+    Safe startup audit:
+    - Runs by default
+    - Never blocks startup unless PLUGIN_AUDIT_STRICT=1
+    """
+    enabled = os.environ.get("PLUGIN_AUDIT_ON_STARTUP", "1").strip().lower()
+    if enabled in {"0", "false", "no", "off"}:
+        print("Plugin Audit: skipped (PLUGIN_AUDIT_ON_STARTUP disabled).")
+        return
+
+    strict = os.environ.get("PLUGIN_AUDIT_STRICT", "0").strip().lower() in {"1", "true", "yes", "on"}
+    cmd = [sys.executable, os.path.join("verification_scripts", "audit_plugin_architecture.py")]
+    if strict:
+        cmd.append("--strict")
+    print(f"Plugin Audit: running ({'strict' if strict else 'warn-only'})...")
+    try:
+        completed = subprocess.run(cmd, cwd=os.getcwd(), capture_output=True, text=True, timeout=30)
+        stdout = (completed.stdout or "").strip()
+        stderr = (completed.stderr or "").strip()
+        if stdout:
+            print(stdout)
+        if stderr:
+            print(f"Plugin Audit STDERR: {stderr}")
+        if completed.returncode != 0:
+            msg = f"Plugin Audit found issues (exit={completed.returncode})."
+            if strict:
+                raise RuntimeError(msg)
+            print(f"WARNING: {msg} Continuing startup.")
+        else:
+            print("Plugin Audit: clean.")
+    except Exception as e:
+        if strict:
+            raise
+        print(f"WARNING: Plugin Audit failed to run safely: {e}. Continuing startup.")
+
 def kill_process_on_port(port):
     for proc in psutil.process_iter(['pid', 'name']):
         try:
-            for conn in proc.connections(kind='inet'):
+            pid = int(proc.info.get('pid') or 0)
+            if pid <= 0:
+                continue
+            for conn in proc.net_connections(kind='inet'):
                 if conn.laddr.port == port:
                     print(f"Killing process {proc.info['name']} (PID: {proc.info['pid']}) on port {port}")
                     proc.kill()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess, ValueError):
             pass
 
 def wait_for_server(url, timeout=10):
@@ -29,7 +69,8 @@ def wait_for_server(url, timeout=10):
     return False
 
 def main():
-    print("🚀 Starting High-MCP Multi-Node Cluster...")
+    print("Starting High-MCP Multi-Node Cluster...")
+    run_plugin_audit()
 
     # 1. Kill existing processes on ports 8002, 8003, 8004
     kill_process_on_port(8002)
@@ -49,10 +90,10 @@ def main():
     quota_process = subprocess.Popen(quota_server_cmd, cwd=os.getcwd())
     
     if not wait_for_server("http://localhost:8003/status"):
-        print("❌ Failed to start Quota Server!")
+        print("Failed to start Quota Server!")
         quota_process.kill()
         sys.exit(1)
-    print("✅ Quota Server is active.")
+    print("Quota Server is active.")
 
     # 3. Start UI Server (Node 2) with Workers
     # Windows doesn't support uvicorn workers via command line easily if code is not importable, 
@@ -73,7 +114,7 @@ def main():
     
     ui_process = subprocess.Popen(ui_cmd, cwd=os.getcwd())
 
-    print("\n✅ Cluster is RUNNING!")
+    print("\nCluster is RUNNING!")
     print("   - Quota Node: http://localhost:8003")
     print("   - UI Node:    http://localhost:8004/dashboard")
     print("\nPress Ctrl+C to stop the cluster.")
@@ -82,7 +123,7 @@ def main():
         ui_process.wait()
         quota_process.wait()
     except KeyboardInterrupt:
-        print("\n🛑 Stopping cluster...")
+        print("\nStopping cluster...")
         ui_process.terminate()
         quota_process.terminate()
         print("Done.")
