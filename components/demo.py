@@ -1,11 +1,11 @@
-from mcp.server.fastmcp import FastMCP
+﻿from mcp.server.fastmcp import FastMCP
 from fastapi import FastAPI
 
 def setup(mcp: FastMCP = None, app: FastAPI = None):
     """
     Demo Component to verify Unified Architecture.
     """
-    print(f"👋 Demo Component Loading... (MCP={mcp is not None}, App={app is not None})")
+    print(f"Demo Component loading... (MCP={mcp is not None}, App={app is not None})")
 
     if mcp:
         @mcp.tool()

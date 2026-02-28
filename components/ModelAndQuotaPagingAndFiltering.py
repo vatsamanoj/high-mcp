@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+﻿from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from typing import Optional, List, Any
 import sys
@@ -63,9 +63,9 @@ def get_quotas(
     return get_all_models(page, per_page, model_name, qm)
 
 # Component Manager Hook
-def setup(mcp=None, app=None, **kwargs):
+def setup(mcp=None, app=None, **_kwargs):
     if app:
         app.include_router(pagination_and_filtering_component)
-        print("✅ ModelAndQuotaPagingAndFiltering component setup complete.")
+        print("ModelAndQuotaPagingAndFiltering component setup complete.")
     if mcp:
-        print("ℹ️ ModelAndQuotaPagingAndFiltering: MCP support not implemented yet.")
+        print("ModelAndQuotaPagingAndFiltering: MCP support not implemented yet.")

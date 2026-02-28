@@ -6,7 +6,6 @@ from mcp.server.fastmcp import FastMCP
 from redis_quota_manager import RedisQuotaManager
 from async_adapters import LocalQuotaManagerAsync
 from dependencies import set_dependencies
-from free_ai_sensor import FreeAISensor
 from ai_engine import AIEngine
 from error_manager import ErrorManager
 from trust_system import TrustSystem
@@ -91,9 +90,7 @@ component_manager.load_all_components()
 component_manager.start_watcher()
 
 # 6. Start Background Services
-print("ðŸ“¡ Starting Background Sensors & UI...")
-sensor = FreeAISensor(quota_manager)
-sensor.start()
+print("ðŸ“¡ Starting Background Services & UI...")
 
 # Start UI Server as a separate subprocess
 print("ðŸ–¥ï¸  Launching UI Node (subprocess)...")

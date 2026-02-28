@@ -3,13 +3,14 @@ import os
 import time
 import threading
 import fakeredis
-from typing import Dict, Any, Optional, Tuple, List, Union
+from typing import Dict, Any, Optional, Tuple, List
 import glob
 from notification_system import NotificationSystem
 
 class RedisQuotaManager:
     def __init__(self, base_dir: str, db_filename: str = "quota.rdb", persistence_enabled: bool = True):
         self.base_dir = base_dir
+        self.db_filename = db_filename
         self.quota_dir = os.path.join(base_dir, "quotas")
         self.persistence_enabled = persistence_enabled
         self.notification_system = NotificationSystem(base_dir)
@@ -347,7 +348,7 @@ class RedisQuotaManager:
             if not check(rpm_used, rpm_limit): return False
             if not check(rpd_used, rpd_limit): return False
 
-            # 4. Check Health (set by FreeAISensor) - This is usually per model, but could be per config if extended
+            # 4. Check Health - This is usually per model, but could be per config if extended
             # For now, if the MODEL is marked down globally (e.g. API outage), all configs are down.
             health = self.redis.get(f"model:{model_name}:health")
             if health and health.decode('utf-8') == "down":

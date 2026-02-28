@@ -2,7 +2,6 @@ import subprocess
 import sys
 import time
 import os
-import signal
 import psutil
 import httpx
 

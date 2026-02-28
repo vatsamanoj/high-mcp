@@ -13,10 +13,16 @@ const API_BASE = 'http://localhost:8004/api';
         let modelCallRows = [];
 
         // --- Navigation ---
-        function switchView(viewName) {
+        function switchView(viewName, clickEvent) {
             // Update Nav Buttons
             document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active'); 
+            const evt = clickEvent || (typeof window !== 'undefined' ? window.event : null);
+            if (evt && evt.target && typeof evt.target.classList?.add === 'function') {
+                evt.target.classList.add('active');
+            } else {
+                const navBtn = document.querySelector(`nav button[onclick*="switchView('${viewName}')"]`);
+                if (navBtn) navBtn.classList.add('active');
+            }
 
             // Update Views
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -958,7 +964,9 @@ const API_BASE = 'http://localhost:8004/api';
                 const smartNote = data.smart_template && data.smart_template !== 'none'
                     ? `, smart=${data.smart_template}`
                     : '';
-                setDoclingStatus(`Converted successfully (${data.chars || 0} chars, ${data.extractor || extractor}${parserNote}${modelNote}${requestedSmartModel}${ocrModelNote}${singleCallNote}${compactNote}${fallbackNote}${profileFallbackNote}${smartNote}).`);
+                const totalMs = Number(data.total_ms || 0);
+                const timeNote = Number.isFinite(totalMs) && totalMs > 0 ? `, time=${Math.round(totalMs)}ms` : '';
+                setDoclingStatus(`Converted successfully (${data.chars || 0} chars, ${data.extractor || extractor}${parserNote}${modelNote}${requestedSmartModel}${ocrModelNote}${singleCallNote}${compactNote}${fallbackNote}${profileFallbackNote}${smartNote}${timeNote}).`);
             } catch (e) {
                 setDoclingStatus(`Convert failed: ${e.message}`, true);
             } finally {

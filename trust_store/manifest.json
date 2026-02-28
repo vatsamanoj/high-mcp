@@ -1427,7 +1427,56 @@
       "label": "pre-load-checkpoint",
       "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260211_132149_185342.zip",
       "status": "healthy"
+    },
+    {
+      "id": "v_20260228_162811_152258",
+      "timestamp": "2026-02-28T16:28:17.859570",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260228_162811_152258.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260228_162928_323651",
+      "timestamp": "2026-02-28T16:29:35.916429",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260228_162928_323651.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260228_163409_565934",
+      "timestamp": "2026-02-28T16:34:17.821173",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260228_163409_565934.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260228_163718_121726",
+      "timestamp": "2026-02-28T16:37:26.537978",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260228_163718_121726.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260228_163853_146483",
+      "timestamp": "2026-02-28T16:39:02.805267",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260228_163853_146483.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260228_164028_645476",
+      "timestamp": "2026-02-28T16:40:35.779576",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260228_164028_645476.zip",
+      "status": "healthy"
+    },
+    {
+      "id": "v_20260228_164135_669270",
+      "timestamp": "2026-02-28T16:41:42.760942",
+      "label": "startup",
+      "path": "C:\\Users\\HP\\Documents\\high-mcp\\trust_store\\backups\\v_20260228_164135_669270.zip",
+      "status": "healthy"
     }
   ],
-  "current_version": "v_20260211_132149_185342"
+  "current_version": "v_20260228_164135_669270"
 }

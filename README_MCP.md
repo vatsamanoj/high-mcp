@@ -7,7 +7,6 @@ This server implements the Model Context Protocol (MCP) to provide high-availabi
 - **Quota Management**: Real-time tracking of RPM, TPM, and RPD using Redis (via `fakeredis` for local persistence).
 - **Hot-Reloading**: Automatically digests new or modified `quota_*.json` files from the `quotas/` directory without restarting.
 - **Multi-Provider Support**: Supports Google Gemini, Groq, Mistral, and OpenRouter (via OpenAI-compatible API).
-- **FreeAISensor**: A background "health check" service that periodically probes free models to ensure they are available and working, updating their status in real-time.
 - **Key Harvester Agent**: An intelligent, browser-based agent that helps you navigate provider dashboards to "grab" API keys using computer vision and DOM analysis.
 - **Persistence**: Usage data is persisted to `redis_dump.json`.
 - **Standard Interface**: Fully compatible with any MCP client (Claude Desktop, Cursor, etc.).

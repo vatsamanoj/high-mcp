@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from redis_quota_manager import RedisQuotaManager
 from ai_engine import AIEngine
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright, Page
+from playwright.sync_api import sync_playwright
 
 class KeyHarvesterAgent:
     def __init__(self):

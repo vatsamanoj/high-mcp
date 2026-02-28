@@ -1701,11 +1701,11 @@ async def _vl_extract_with_fallback(
         "- Do not add explanations.\n"
         "- If no text is visible, return exactly: NO_TEXT_FOUND\n"
     )
-    primary_out = await _call_openrouter_vl_model(primary_model, prompt, image_mime, image_b64)
+    primary_out = await _call_vl_model(primary_model, prompt, image_mime, image_b64)
     if primary_out.strip() and not _is_error_like(primary_out):
         return {"markdown": primary_out, "model_used": primary_model, "fallback_used": False}
 
-    fallback_out = await _call_openrouter_vl_model(fallback_model, prompt, image_mime, image_b64)
+    fallback_out = await _call_vl_model(fallback_model, prompt, image_mime, image_b64)
     if fallback_out.strip() and not _is_error_like(fallback_out):
         return {"markdown": fallback_out, "model_used": fallback_model, "fallback_used": True}
 
@@ -1746,7 +1746,7 @@ async def _vl_extract_structured_with_fallback(
     attempts: List[Dict[str, Any]] = []
 
     async def _attempt(model: str) -> Tuple[Optional[Dict[str, Any]], Optional[str], str]:
-        out = await _call_openrouter_vl_model(model, prompt, image_mime, image_b64)
+        out = await _call_vl_model(model, prompt, image_mime, image_b64)
         raw = (out or "").strip()
         if not raw or _is_error_like(raw):
             return None, raw[:240], raw
@@ -1895,6 +1895,27 @@ def _call_openrouter_vl_model_sync(model: str, prompt: str, image_mime: str, ima
 
 async def _call_openrouter_vl_model(model: str, prompt: str, image_mime: str, image_b64: str) -> str:
     return await asyncio.to_thread(_call_openrouter_vl_model_sync, model, prompt, image_mime, image_b64)
+
+
+async def _call_vl_model(model: str, prompt: str, image_mime: str, image_b64: str) -> str:
+    """
+    Unified VL caller through AIEngine so provider routing follows active quota config.
+    This allows Gemini-only operation when openrouter quota is disabled/exhausted.
+    """
+    try:
+        engine = get_ai_engine()
+        raw = await engine.generate_content(
+            model,
+            prompt,
+            images=[{"mime_type": image_mime, "data": image_b64}],
+            return_metadata=True,
+        )
+        text, _actual_model, is_error = _unwrap_engine_result(raw, model)
+        if is_error:
+            return f"Error: {text[:240]}"
+        return text or ""
+    except Exception as exc:
+        return f"Error: transport failure: {exc}"
 
 
 def _chunk_text(text: str, max_chars: int = 10000) -> List[str]:
@@ -2766,6 +2787,27 @@ def _append_llm_ranking_record(
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
+def _resolve_selected_model_for_ranking(
+    selected_model: Optional[str],
+    llm_seed_model_used: Optional[str],
+    ranked_attempts: Optional[List[Dict[str, Any]]] = None,
+    raw_attempts: Optional[List[Dict[str, Any]]] = None,
+) -> Optional[str]:
+    chosen = (selected_model or llm_seed_model_used or "").strip()
+    if chosen:
+        return chosen
+    for attempt_list in (ranked_attempts or [], raw_attempts or []):
+        if not isinstance(attempt_list, list):
+            continue
+        for attempt in attempt_list:
+            if not isinstance(attempt, dict):
+                continue
+            model_name = str(attempt.get("model") or "").strip()
+            if model_name:
+                return model_name
+    return None
+
+
 def _best_llm_success_score(attempts: List[Dict[str, Any]]) -> float:
     best = 0.0
     for a in attempts or []:
@@ -2859,6 +2901,24 @@ def _seed_text_quality_score(source_markdown: str, seeded_text: str) -> float:
     return round((overlap * 0.7) + (length_score * 0.3), 2)
 
 
+def _unwrap_engine_result(raw: Any, requested_model: str) -> Tuple[str, str, bool]:
+    """
+    Normalize AIEngine output and expose:
+    - text
+    - actual model used (falls back to requested model)
+    - whether call should be treated as error
+    """
+    if isinstance(raw, dict):
+        text = str(raw.get("text") or "").strip()
+        actual_model = str(raw.get("actual_model") or requested_model or "").strip() or requested_model
+        status = str(raw.get("status") or "").strip().lower()
+        is_error = status == "failure" or text.lower().startswith("error:")
+        return text, actual_model, is_error
+    text = str(raw or "").strip()
+    is_error = text.lower().startswith("error:")
+    return text, requested_model, is_error
+
+
 async def _run_llm_seed_text(
     markdown: str,
     template_name: str,
@@ -2883,13 +2943,13 @@ async def _run_llm_seed_text(
     attempts: List[Dict[str, Any]] = []
     for candidate_model in model_candidates[:8]:
         # Avoid strict response_format hints for provider/model pairs that reject extra arguments.
-        raw = await engine.generate_content(candidate_model, prompt)
-        text = str(raw or "").strip()
-        if text.lower().startswith("error:"):
-            _record_model_health("seed_text", candidate_model, success=False, error=text)
+        raw = await engine.generate_content(candidate_model, prompt, return_metadata=True)
+        text, actual_model, is_error = _unwrap_engine_result(raw, candidate_model)
+        if is_error:
+            _record_model_health("seed_text", actual_model, success=False, error=text)
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": actual_model,
                     "phase": "seed_text",
                     "success": False,
                     "score": 0.0,
@@ -2906,10 +2966,10 @@ async def _run_llm_seed_text(
                 text = text[4:].strip()
 
         if len(text) < 40:
-            _record_model_health("seed_text", candidate_model, success=False, error="seed output too short")
+            _record_model_health("seed_text", actual_model, success=False, error="seed output too short")
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": actual_model,
                     "phase": "seed_text",
                     "success": False,
                     "score": 0.0,
@@ -2924,7 +2984,7 @@ async def _run_llm_seed_text(
         final_score = round((base_score * 0.7) + (profile_score * 0.3), 2)
         attempts.append(
             {
-                "model": candidate_model,
+                "model": actual_model,
                 "phase": "seed_text",
                 "success": True,
                 "score": final_score,
@@ -2934,7 +2994,7 @@ async def _run_llm_seed_text(
                 "text": text,
             }
         )
-        _record_model_health("seed_text", candidate_model, success=True)
+        _record_model_health("seed_text", actual_model, success=True)
 
     ranked = sorted(attempts, key=lambda x: (bool(x.get("success")), float(x.get("score", 0.0))), reverse=True)
     best = next((a for a in ranked if a.get("success")), None)
@@ -2968,14 +3028,14 @@ async def _run_smart_template_extraction(
     for candidate_model in model_candidates[:8]:
         # Attempt 1: strict schema extraction
         # Avoid strict response_format hints for provider/model pairs that reject extra arguments.
-        raw = await engine.generate_content(candidate_model, prompt)
-        raw_text = str(raw or "").strip()
-        if raw_text.lower().startswith("error:"):
-            errors.append(f"{candidate_model}: {raw_text[:180]}")
-            _record_model_health("smart_extract", candidate_model, success=False, error=raw_text)
+        raw = await engine.generate_content(candidate_model, prompt, return_metadata=True)
+        raw_text, actual_model, is_error = _unwrap_engine_result(raw, candidate_model)
+        if is_error:
+            errors.append(f"{actual_model}: {raw_text[:180]}")
+            _record_model_health("smart_extract", actual_model, success=False, error=raw_text)
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": actual_model,
                     "phase": "extract",
                     "success": False,
                     "score": 0.0,
@@ -2988,29 +3048,29 @@ async def _run_smart_template_extraction(
             score = _schema_completeness_score(template_name, parsed)
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": actual_model,
                     "phase": "extract",
                     "success": True,
                     "score": score,
                     "error": None,
                 }
             )
-            _record_model_health("smart_extract", candidate_model, success=True)
+            _record_model_health("smart_extract", actual_model, success=True)
             ranked = sorted(attempts, key=lambda x: (bool(x.get("success")), float(x.get("score", 0.0))), reverse=True)
             _recompute_phase_preferences("smart_extract")
             return {
                 "data": parsed,
-                "smart_model_used": candidate_model,
+                "smart_model_used": actual_model,
                 "llm_attempts": attempts,
                 "llm_ranking": ranked,
                 "prompt_compaction": compact_meta,
             }
         except Exception as exc:
-            errors.append(f"{candidate_model}: parse failed: {exc}")
-            _record_model_health("smart_extract", candidate_model, success=False, error=f"parse failed: {exc}")
+            errors.append(f"{actual_model}: parse failed: {exc}")
+            _record_model_health("smart_extract", actual_model, success=False, error=f"parse failed: {exc}")
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": actual_model,
                     "phase": "extract",
                     "success": False,
                     "score": 0.0,
@@ -3026,14 +3086,14 @@ async def _run_smart_template_extraction(
             f"Broken output:\n{raw_text}\n"
         )
         # Keep repair call permissive; parse JSON ourselves from model text.
-        repaired = await engine.generate_content(candidate_model, repair_prompt)
-        repaired_text = str(repaired or "").strip()
-        if repaired_text.lower().startswith("error:"):
-            errors.append(f"{candidate_model}: repair failed: {repaired_text[:180]}")
-            _record_model_health("smart_extract", candidate_model, success=False, error=repaired_text)
+        repaired = await engine.generate_content(candidate_model, repair_prompt, return_metadata=True)
+        repaired_text, repaired_actual_model, repair_is_error = _unwrap_engine_result(repaired, candidate_model)
+        if repair_is_error:
+            errors.append(f"{repaired_actual_model}: repair failed: {repaired_text[:180]}")
+            _record_model_health("smart_extract", repaired_actual_model, success=False, error=repaired_text)
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": repaired_actual_model,
                     "phase": "repair",
                     "success": False,
                     "score": 0.0,
@@ -3046,29 +3106,29 @@ async def _run_smart_template_extraction(
             score = _schema_completeness_score(template_name, parsed_repair)
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": repaired_actual_model,
                     "phase": "repair",
                     "success": True,
                     "score": score,
                     "error": None,
                 }
             )
-            _record_model_health("smart_extract", candidate_model, success=True)
+            _record_model_health("smart_extract", repaired_actual_model, success=True)
             ranked = sorted(attempts, key=lambda x: (bool(x.get("success")), float(x.get("score", 0.0))), reverse=True)
             _recompute_phase_preferences("smart_extract")
             return {
                 "data": parsed_repair,
-                "smart_model_used": candidate_model,
+                "smart_model_used": repaired_actual_model,
                 "llm_attempts": attempts,
                 "llm_ranking": ranked,
                 "prompt_compaction": compact_meta,
             }
         except Exception as exc:
-            errors.append(f"{candidate_model}: repair parse failed: {exc}")
-            _record_model_health("smart_extract", candidate_model, success=False, error=f"repair parse failed: {exc}")
+            errors.append(f"{repaired_actual_model}: repair parse failed: {exc}")
+            _record_model_health("smart_extract", repaired_actual_model, success=False, error=f"repair parse failed: {exc}")
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": repaired_actual_model,
                     "phase": "repair",
                     "success": False,
                     "score": 0.0,
@@ -3095,14 +3155,14 @@ async def _run_smart_template_extraction_from_binary(
     errors: List[str] = []
     attempts: List[Dict[str, Any]] = []
     for candidate_model in model_candidates[:8]:
-        raw = await engine.generate_content(candidate_model, prompt, images=inline_payload)
-        raw_text = str(raw or "").strip()
-        if raw_text.lower().startswith("error:"):
-            errors.append(f"{candidate_model}: {raw_text[:180]}")
-            _record_model_health("smart_extract", candidate_model, success=False, error=raw_text)
+        raw = await engine.generate_content(candidate_model, prompt, images=inline_payload, return_metadata=True)
+        raw_text, actual_model, is_error = _unwrap_engine_result(raw, candidate_model)
+        if is_error:
+            errors.append(f"{actual_model}: {raw_text[:180]}")
+            _record_model_health("smart_extract", actual_model, success=False, error=raw_text)
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": actual_model,
                     "phase": "extract_binary",
                     "success": False,
                     "score": 0.0,
@@ -3115,30 +3175,30 @@ async def _run_smart_template_extraction_from_binary(
             score = _schema_completeness_score(template_name, parsed)
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": actual_model,
                     "phase": "extract_binary",
                     "success": True,
                     "score": score,
                     "error": None,
                 }
             )
-            _record_model_health("smart_extract", candidate_model, success=True)
+            _record_model_health("smart_extract", actual_model, success=True)
             ranked = sorted(attempts, key=lambda x: (bool(x.get("success")), float(x.get("score", 0.0))), reverse=True)
             _recompute_phase_preferences("smart_extract")
             return {
                 "data": parsed,
-                "smart_model_used": candidate_model,
+                "smart_model_used": actual_model,
                 "llm_attempts": attempts,
                 "llm_ranking": ranked,
                 "prompt_compaction": {"mode": "pdf_direct_binary"},
                 "raw_text": raw_text,
             }
         except Exception as exc:
-            errors.append(f"{candidate_model}: parse failed: {exc}")
-            _record_model_health("smart_extract", candidate_model, success=False, error=f"parse failed: {exc}")
+            errors.append(f"{actual_model}: parse failed: {exc}")
+            _record_model_health("smart_extract", actual_model, success=False, error=f"parse failed: {exc}")
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": actual_model,
                     "phase": "extract_binary",
                     "success": False,
                     "score": 0.0,
@@ -3152,14 +3212,14 @@ async def _run_smart_template_extraction_from_binary(
             "Output must be strict JSON.\n\n"
             f"Broken output:\n{raw_text}\n"
         )
-        repaired = await engine.generate_content(candidate_model, repair_prompt)
-        repaired_text = str(repaired or "").strip()
-        if repaired_text.lower().startswith("error:"):
-            errors.append(f"{candidate_model}: repair failed: {repaired_text[:180]}")
-            _record_model_health("smart_extract", candidate_model, success=False, error=repaired_text)
+        repaired = await engine.generate_content(candidate_model, repair_prompt, return_metadata=True)
+        repaired_text, repaired_actual_model, repair_is_error = _unwrap_engine_result(repaired, candidate_model)
+        if repair_is_error:
+            errors.append(f"{repaired_actual_model}: repair failed: {repaired_text[:180]}")
+            _record_model_health("smart_extract", repaired_actual_model, success=False, error=repaired_text)
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": repaired_actual_model,
                     "phase": "repair_binary",
                     "success": False,
                     "score": 0.0,
@@ -3172,30 +3232,30 @@ async def _run_smart_template_extraction_from_binary(
             score = _schema_completeness_score(template_name, parsed_repair)
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": repaired_actual_model,
                     "phase": "repair_binary",
                     "success": True,
                     "score": score,
                     "error": None,
                 }
             )
-            _record_model_health("smart_extract", candidate_model, success=True)
+            _record_model_health("smart_extract", repaired_actual_model, success=True)
             ranked = sorted(attempts, key=lambda x: (bool(x.get("success")), float(x.get("score", 0.0))), reverse=True)
             _recompute_phase_preferences("smart_extract")
             return {
                 "data": parsed_repair,
-                "smart_model_used": candidate_model,
+                "smart_model_used": repaired_actual_model,
                 "llm_attempts": attempts,
                 "llm_ranking": ranked,
                 "prompt_compaction": {"mode": "pdf_direct_binary"},
                 "raw_text": repaired_text,
             }
         except Exception as exc:
-            errors.append(f"{candidate_model}: repair parse failed: {exc}")
-            _record_model_health("smart_extract", candidate_model, success=False, error=f"repair parse failed: {exc}")
+            errors.append(f"{repaired_actual_model}: repair parse failed: {exc}")
+            _record_model_health("smart_extract", repaired_actual_model, success=False, error=f"repair parse failed: {exc}")
             attempts.append(
                 {
-                    "model": candidate_model,
+                    "model": repaired_actual_model,
                     "phase": "repair_binary",
                     "success": False,
                     "score": 0.0,
@@ -3239,8 +3299,8 @@ async def convert_document(
     quality: str = "fast",
     auto_retry: bool = True,
     extractor: str = "auto",
-    vl_model: str = "mistralai/ministral-3b-2512",
-    vl_fallback_model: str = "openai/gpt-4.1-nano",
+    vl_model: str = "gemini-2.5-flash-lite",
+    vl_fallback_model: str = "gemini-2.5-flash",
     smart_template: str = "none",
     smart_model: str = _DOCLING_PRIMARY_MODEL,
     smart_required: bool = True,
@@ -3250,6 +3310,7 @@ async def convert_document(
     if not source and not file:
         raise HTTPException(status_code=400, detail="Provide either 'source' or 'file'.")
 
+    started_at = time.perf_counter()
     temp_path: Optional[str] = None
     try:
         if file is not None:
@@ -3291,14 +3352,16 @@ async def convert_document(
         direct_smart_model_used: Optional[str] = None
         direct_prompt_compaction: Optional[Dict[str, Any]] = None
 
-        # Fast path for all binary documents: one direct smart extraction call with attached file bytes.
-        # This bypasses OCR/VL markdown generation and seed stage entirely.
+        # Fast path for images: one direct smart extraction call with attached bytes.
+        # PDFs/docs should continue through Docling markdown extraction to avoid
+        # provider/image-argument incompatibilities on some runtimes.
         if (
             pdf_direct_llm
             and smart_enabled
             and smart_single_call
             and not smart_auto
             and smart_schema is not None
+            and mime_type.startswith("image/")
         ):
             binary_bytes: Optional[bytes] = None
             if file is not None and isinstance(data, (bytes, bytearray)):
@@ -3358,16 +3421,22 @@ async def convert_document(
             image_b64 = base64.b64encode(image_bytes).decode("ascii")
             # Fast single-call path: image -> structured JSON directly (skip markdown->template second call).
             if smart_enabled and not smart_auto and smart_schema is not None:
-                direct_result = await _vl_extract_structured_with_fallback(
-                    mime_type, image_b64, resolved_template, vl_model, vl_fallback_model
+                # Use the same AIEngine-based direct path as PDF direct mode so
+                # provider/key/model resolution is consistent across templates.
+                # This avoids OpenRouter-only auth paths for non-SAFTA templates.
+                direct_result = await _run_smart_template_extraction_from_binary(
+                    binary_bytes=image_bytes,
+                    mime_type=mime_type,
+                    template_name=resolved_template,
+                    model_name=(smart_model or _DOCLING_PRIMARY_MODEL).strip(),
                 )
                 direct_single_call_used = True
                 direct_llm_attempts = direct_result.get("llm_attempts") or []
                 direct_structured_extraction = direct_result.get("data")
-                direct_smart_model_used = direct_result.get("model_used")
+                direct_smart_model_used = direct_result.get("smart_model_used") or direct_result.get("model_used")
                 # Direct mode should return structured JSON only (no markdown/raw text echo).
                 markdown = ""
-                used_model = direct_result["model_used"]
+                used_model = direct_result.get("smart_model_used") or direct_result.get("model_used")
                 fallback_used = bool(direct_result.get("fallback_used"))
             else:
                 vl_result = await _vl_extract_with_fallback(mime_type, image_b64, vl_model, vl_fallback_model)
@@ -3557,12 +3626,18 @@ async def convert_document(
                 if smart_required and structured_extraction is None:
                     if smart_enabled:
                         try:
+                            selected_for_ranking = _resolve_selected_model_for_ranking(
+                                smart_model_used,
+                                llm_seed_model_used,
+                                llm_ranking,
+                                llm_attempts,
+                            )
                             _append_llm_ranking_record(
                                 template=resolved_template,
                                 parser=parser_used,
                                 source=(json_output or {}).get("source"),
                                 attempts=(llm_seed_ranking or llm_seed_attempts) + (llm_ranking or llm_attempts),
-                                selected_model=smart_model_used,
+                                selected_model=selected_for_ranking,
                                 status="failed",
                                 error=structured_error,
                             )
@@ -3656,12 +3731,18 @@ async def convert_document(
             learning_template = resolved_template
             try:
                 status = "success" if structured_extraction else "partial"
+                selected_for_ranking = _resolve_selected_model_for_ranking(
+                    smart_model_used,
+                    llm_seed_model_used,
+                    llm_ranking,
+                    llm_attempts,
+                )
                 _append_llm_ranking_record(
                     template=learning_template,
                     parser=parser_used,
                     source=(json_output or {}).get("source"),
                     attempts=(llm_seed_ranking or llm_seed_attempts) + (llm_ranking or llm_attempts),
-                    selected_model=smart_model_used or llm_seed_model_used,
+                    selected_model=selected_for_ranking,
                     status=status,
                     error=structured_error,
                 )
@@ -3681,6 +3762,7 @@ async def convert_document(
         output_chars = len(markdown)
         if direct_single_call_used and isinstance(structured_extraction, dict):
             output_chars = len(json.dumps(structured_extraction, ensure_ascii=False))
+        total_ms = round((time.perf_counter() - started_at) * 1000.0, 2)
         return {
             "success": True,
             "source": source if source else (file.filename if file else None),
@@ -3711,6 +3793,7 @@ async def convert_document(
             "structured_extraction_error": structured_error,
             "single_call_path": bool(direct_single_call_used or (smart_enabled and smart_single_call)),
             "chars": output_chars,
+            "total_ms": total_ms,
         }
     except HTTPException:
         raise

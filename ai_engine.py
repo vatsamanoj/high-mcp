@@ -45,22 +45,68 @@ class AIEngine:
         await self._ensure_repo()
         return await self.request_repo.get_model_call_metrics(days=days, status=status)
 
-    async def generate_content(self, model_name: Optional[str], text: str, images: list = None, response_format: str = "text", tools: list = None) -> Any:
+    async def generate_content(
+        self,
+        model_name: Optional[str],
+        text: str,
+        images: list = None,
+        response_format: str = "text",
+        tools: list = None,
+        return_metadata: bool = False,
+    ) -> Any:
         """
         Generate content using available AI models with fallback support.
         This is the main entry point for AI generation.
         """
         try:
             # Set a global timeout for the entire generation process (e.g., 2 minutes)
-            return await asyncio.wait_for(self._generate_content_internal(model_name, text, images, response_format, tools), timeout=120.0)
+            return await asyncio.wait_for(
+                self._generate_content_internal(
+                    model_name,
+                    text,
+                    images,
+                    response_format,
+                    tools,
+                    return_metadata=return_metadata,
+                ),
+                timeout=120.0,
+            )
         except asyncio.TimeoutError:
             print("Generation timed out after 120s")
-            return "Error: Request timed out. The AI took too long to respond."
+            timeout_error = "Error: Request timed out. The AI took too long to respond."
+            if return_metadata:
+                return {
+                    "text": timeout_error,
+                    "tool_calls": [],
+                    "requested_model": model_name,
+                    "actual_model": None,
+                    "status": "failure",
+                    "error_text": timeout_error,
+                }
+            return timeout_error
         except Exception as e:
             print(f"Unexpected error in generate_content: {e}")
-            return f"Error: {str(e)}"
+            error_text = f"Error: {str(e)}"
+            if return_metadata:
+                return {
+                    "text": error_text,
+                    "tool_calls": [],
+                    "requested_model": model_name,
+                    "actual_model": None,
+                    "status": "failure",
+                    "error_text": str(e),
+                }
+            return error_text
 
-    async def _generate_content_internal(self, model_name: Optional[str], text: str, images: list = None, response_format: str = "text", tools: list = None) -> Any:
+    async def _generate_content_internal(
+        self,
+        model_name: Optional[str],
+        text: str,
+        images: list = None,
+        response_format: str = "text",
+        tools: list = None,
+        return_metadata: bool = False,
+    ) -> Any:
         await self._ensure_repo()
         has_images = bool(images)
         request_hash = None
@@ -233,6 +279,20 @@ class AIEngine:
                     image_hash = self.request_repo.compute_image_hash(images) if images else None
                     await self.request_repo.save_request(input_hash, text, response_text, cache_model_name, image_hash)
 
+                if return_metadata:
+                    return {
+                        "text": response_text,
+                        "tool_calls": tool_calls or [],
+                        "requested_model": model_name,
+                        "actual_model": actual_model_name,
+                        "status": "success",
+                        "error_text": None,
+                        "tokens_used": int(total_tokens or 0),
+                        "input_tokens": int(input_tokens or 0),
+                        "output_tokens": int(output_tokens or 0),
+                        "latency_ms": latency_ms,
+                        "cost_usd": float(cost_usd) if cost_usd is not None else None,
+                    }
                 if tool_calls:
                     return {"text": response_text, "tool_calls": tool_calls}
                 return response_text
@@ -294,7 +354,17 @@ class AIEngine:
 
                 current_model_name = None # Clear preference
                 
-        return "Error: Failed to generate content after multiple attempts."
+        final_error = "Error: Failed to generate content after multiple attempts."
+        if return_metadata:
+            return {
+                "text": final_error,
+                "tool_calls": [],
+                "requested_model": model_name,
+                "actual_model": None,
+                "status": "failure",
+                "error_text": final_error,
+            }
+        return final_error
 
     async def _get_all_model_names(self) -> List[str]:
         get_all_models = getattr(self.quota_manager, "get_all_models", None)

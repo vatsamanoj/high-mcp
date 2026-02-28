@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from mcp.server.fastmcp import FastMCP
 from dependencies import get_ai_engine

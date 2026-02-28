@@ -1,5 +1,5 @@
 from fastapi import HTTPException, Depends
-from typing import Callable, Any, Optional
+from typing import Any
 
 # Global internal state
 _error_manager: Any = None

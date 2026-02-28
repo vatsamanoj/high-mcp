@@ -1,6 +1,6 @@
 import uvicorn
 import os
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List, Tuple
 from redis_quota_manager import RedisQuotaManager
